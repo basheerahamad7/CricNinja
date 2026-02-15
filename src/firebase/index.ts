@@ -1,4 +1,3 @@
-'use client';
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
@@ -8,7 +7,7 @@ import { getDatabase } from 'firebase/database';
 
 /**
  * Initializes Firebase App and returns core service instances.
- * Uses a singleton pattern to ensure only one instance of each service is created.
+ * Universal function safe for both Client and Server environments.
  */
 export function initializeFirebase() {
   let firebaseApp: FirebaseApp;
@@ -39,6 +38,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
   };
 }
 
+// Exports for convenience (hooks are imported from their specific files to avoid server-side evaluation issues)
 export * from './provider';
 export * from './client-provider';
 export * from './firestore/use-collection';
