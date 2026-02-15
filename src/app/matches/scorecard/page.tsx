@@ -301,11 +301,11 @@ function ScorecardContent() {
           <div className="py-4 space-y-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Player Name</label>
-              <Input 
+              <input 
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Enter new name"
-                className="h-12 rounded-2xl bg-gray-50 border-none font-bold"
+                className="h-12 w-full rounded-2xl bg-gray-50 border-none px-4 font-bold outline-none"
               />
             </div>
           </div>
