@@ -53,12 +53,10 @@ export default function HomePage() {
   useEffect(() => {
     setMounted(true);
     
-    // Check if already in standalone mode
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsStandalone(true);
     }
 
-    // Listen for PWA install prompt
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -90,7 +88,6 @@ export default function HomePage() {
       if (!mounted || !isHydrated || !db) return;
 
       const combinedMap = new Map<string, Match>();
-      
       matches.forEach(m => combinedMap.set(m.id, m));
 
       for (const id of joinedMatchIds) {
@@ -341,7 +338,6 @@ export default function HomePage() {
          </Link>
       </footer>
 
-      {/* Install App Dialog */}
       <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
         <DialogContent className="rounded-3xl max-w-[90vw]">
           <DialogHeader>
