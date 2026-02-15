@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -117,8 +116,6 @@ function ScoringContent() {
   const striker = battingTeam.players.find(p => p.id === match.currentStrikerId);
   const nonStriker = battingTeam.players.find(p => p.id === match.currentNonStrikerId);
   const bowler = bowlingTeam.players.find(p => p.id === match.currentBowlerId);
-
-  const lastBalls = currentInnings.overs?.[currentInnings.overs.length - 1]?.balls || [];
 
   const crr = currentInnings.totalRuns > 0 && currentInnings.totalBalls > 0
     ? (currentInnings.totalRuns / (currentInnings.totalBalls / 6)) 

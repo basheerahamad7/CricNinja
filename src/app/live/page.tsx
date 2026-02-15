@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
@@ -25,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { toast } from '@/hooks/use-toast';
 import { getCachedMatch } from '@/services/match-actions';
 
-const POLLING_INTERVAL = 3000; // 3 seconds for perceived instancy
+const POLLING_INTERVAL = 3000;
 
 function LiveContent() {
   const router = useRouter();
@@ -41,7 +40,6 @@ function LiveContent() {
   const [origin, setOrigin] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Stale-While-Revalidate: Use the local store as the immediate data source
   const match = matchId ? joinedMatches[matchId] : null;
 
   const fetchScore = useCallback(async (showLoader = false) => {
@@ -75,18 +73,15 @@ function LiveContent() {
     return () => unsub();
   }, []);
 
-  // Initial Join, Periodic Polling, and Focus Revalidation
   useEffect(() => {
     if (matchId && isHydrated) {
       joinMatch(matchId);
-      fetchScore(true); // Initial fetch
+      fetchScore(true);
 
-      // 1. High Frequency Interval
       const interval = setInterval(() => {
         fetchScore();
       }, POLLING_INTERVAL);
 
-      // 2. Revalidate on Focus (Tab switch or phone wake)
       const handleFocus = () => {
         if (document.visibilityState === 'visible') {
           fetchScore(true);
@@ -106,7 +101,6 @@ function LiveContent() {
 
   if (!mounted || !isHydrated) return null;
 
-  // Background refresh strategy: only show full page loader if we have NO cached data
   if (!match && isRefreshing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
