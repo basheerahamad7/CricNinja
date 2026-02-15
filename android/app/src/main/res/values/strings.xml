@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CricNinja</string>
+    <string name="title_activity_main">CricNinja</string>
+    <string name="package_name">com.cricninja.app</string>
+    <string name="custom_url_scheme">com.cricninja.app</string>
+</resources>

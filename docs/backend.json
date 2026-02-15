@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Match": {
+      "title": "Match",
+      "type": "object",
+      "description": "Bundled match document optimized for single-read performance on the Free Tier.",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "status": { "type": "string", "enum": ["ongoing", "completed"] },
+        "teamA": { "$ref": "#/backend/entities/Team" },
+        "teamB": { "$ref": "#/backend/entities/Team" },
+        "currentInnings": { "type": "number", "enum": [1, 2] },
+        "totalOvers": { "type": "number" },
+        "innings1": { "type": "object" },
+        "innings2": { "type": "object" },
+        "currentStrikerId": { "type": "string" },
+        "currentNonStrikerId": { "type": "string" },
+        "currentBowlerId": { "type": "string" }
+      },
+      "required": ["id", "status", "teamA", "teamB"]
+    },
+    "Team": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "players": {
+          "type": "array",
+          "items": { "$ref": "#/backend/entities/Player" }
+        }
+      }
+    },
+    "Player": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "runs": { "type": "number" },
+        "balls": { "type": "number" },
+        "wickets": { "type": "number" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["password", "anonymous", "google.com"]
+  },
+  "firestore": {
+    "/matches/{matchId}": {
+      "schema": { "$ref": "#/backend/entities/Match" },
+      "description": "Single-read match container."
+    }
+  }
+}
