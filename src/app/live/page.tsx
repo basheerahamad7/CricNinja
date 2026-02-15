@@ -132,6 +132,11 @@ function LiveContent() {
   const currentInnings = match.currentInnings === 1 ? match.innings1 : match.innings2;
   const battingTeam = match.teamA.id === currentInnings.battingTeamId ? match.teamA : match.teamB;
   const bowlingTeam = match.teamA.id === currentInnings.battingTeamId ? match.teamB : match.teamA;
+  
+  const striker = battingTeam.players.find(p => p.id === match.currentStrikerId);
+  const nonStriker = battingTeam.players.find(p => p.id === match.currentNonStrikerId);
+  const bowler = bowlingTeam.players.find(p => p.id === match.currentBowlerId);
+  
   const lastBalls = currentInnings.overs?.[currentInnings.overs.length - 1]?.balls || [];
 
   const crr = currentInnings.totalBalls > 0 
@@ -193,7 +198,7 @@ function LiveContent() {
         <div className="flex flex-col items-end gap-1">
           <div className="flex items-center gap-2">
             {isRefreshing && <RefreshCcw className="w-3 h-3 text-primary animate-spin" />}
-            <Badge variant="outline" className={`text-[9px] font-black uppercase ${match.status === 'ongoing' ? 'text-red-600 border-red-200 bg-red-50' : 'text-gray-400 bg-gray-50'}`}>
+            <Badge variant="outline" className={`text-[9px] font-black uppercase ${match.status === 'ongoing' ? 'text-red-600 border-red-200' : 'text-gray-400 border-gray-200'}`}>
               {match.status === 'ongoing' ? '🔴 LIVE' : 'FINISHED'}
             </Badge>
           </div>
@@ -242,17 +247,50 @@ function LiveContent() {
           </div>
           
           <CardContent className="p-4 space-y-4">
-            <div className="flex justify-between items-center border-b pb-4 border-gray-50">
-              <div className="text-center flex-1">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 truncate">{match.teamA.name}</p>
-                <p className="text-lg font-bold tabular-nums">{match.innings1.totalRuns}/{match.innings1.totalWickets}</p>
+            <div className="space-y-3">
+              {[striker, nonStriker].map((p, idx) => (
+                <div 
+                  key={p?.id || idx} 
+                  className={`flex justify-between items-center py-2 px-3 rounded-xl transition-colors ${idx === 0 ? 'bg-primary/5 border border-primary/10' : ''}`}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden flex-1">
+                    <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-primary animate-pulse' : 'bg-transparent'}`} />
+                    <span className={`font-bold truncate ${idx === 0 ? 'text-primary' : 'text-gray-600'}`}>
+                      {p?.name || '---'}
+                    </span>
+                  </div>
+                  <div className="text-right flex items-center gap-4">
+                    <div className="flex flex-col items-end">
+                      <span className="text-lg font-black leading-none">{p?.runs || 0}<span className="text-xs font-bold text-gray-400 ml-1">({p?.balls || 0})</span></span>
+                      <span className="text-[9px] font-bold text-gray-400 uppercase mt-1">SR {p && p.balls > 0 ? ((p.runs / p.balls) * 100).toFixed(1) : "0.0"}</span>
+                    </div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase leading-tight border-l pl-3 border-gray-100 min-w-[35px]">
+                      4s: {p?.fours || 0}<br/>6s: {p?.sixes || 0}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Separator className="bg-gray-100" />
+
+            <div className={`bg-secondary/5 rounded-xl p-3 border border-secondary/10 flex justify-between items-center transition-colors`}>
+              <div className="flex items-center gap-2 overflow-hidden flex-1">
+                <div className={`w-2 h-2 rounded-full ${bowler ? 'bg-secondary' : 'bg-transparent'}`} />
+                <span className="font-bold text-secondary truncate">{bowler?.name || '---'}</span>
               </div>
-              <div className="px-4 text-gray-300 font-light text-xl italic">vs</div>
-              <div className="text-center flex-1">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 truncate">{match.teamB.name}</p>
-                <p className="text-lg font-bold tabular-nums">{match.innings2.totalRuns}/{match.innings2.totalWickets}</p>
+              <div className="text-right flex items-center gap-4">
+                <div className="flex flex-col items-end">
+                  <span className="text-lg font-black text-secondary leading-none">{bowler?.wickets || 0}<span className="text-xs font-bold text-gray-400 ml-1">-{bowler?.runsConceded || 0}</span></span>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase mt-1">Econ {(bowler && bowler.oversBowled > 0 ? (bowler.runsConceded / (Math.floor(bowler.oversBowled) + (bowler.oversBowled % 1) * 10 / 6)).toFixed(2) : "0.00")}</span>
+                </div>
+                <div className="text-[10px] font-bold text-gray-400 border-l pl-3 border-gray-100 min-w-[40px]">
+                  Overs<br/><span className="text-gray-900">{Math.floor(bowler?.oversBowled || 0)}.{Math.round(((bowler?.oversBowled || 0) % 1) * 10)}</span>
+                </div>
               </div>
             </div>
+
+            <Separator className="bg-gray-50" />
 
             <div>
                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">THIS OVER</p>
