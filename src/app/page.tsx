@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -30,6 +31,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 
@@ -205,6 +207,7 @@ export default function HomePage() {
             <DialogContent className="rounded-3xl max-w-[90vw]">
               <DialogHeader>
                 <DialogTitle className="text-center font-black uppercase tracking-tight">Join Scoreboard</DialogTitle>
+                <DialogDescription className="text-center text-xs text-gray-500">Enter the unique Match UID to join as a spectator or scorer.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -342,6 +345,7 @@ export default function HomePage() {
         <DialogContent className="rounded-3xl max-w-[90vw]">
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase tracking-tight">Install CricNinja</DialogTitle>
+            <DialogDescription className="text-center text-xs text-gray-500">Follow the steps below to add CricNinja to your home screen.</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4 text-center">
             <div className="bg-primary/10 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -297,6 +298,7 @@ function ScorecardContent() {
         <DialogContent className="rounded-3xl max-w-[90vw]">
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase tracking-tighter">Rename Player</DialogTitle>
+            <DialogDescription className="text-center text-xs text-gray-500">Update the player's name for the final scorecard.</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div className="space-y-2">

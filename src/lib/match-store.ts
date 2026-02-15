@@ -155,7 +155,7 @@ export const useMatchStore = create<MatchStore>()(
         })),
     }),
     { 
-      name: 'cricninja-v5-store',
+      name: 'cricninja-v6-store', // Bumped version for security update
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     }
   )

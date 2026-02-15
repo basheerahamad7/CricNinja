@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -398,7 +399,10 @@ function ScoringContent() {
 
       <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
         <DialogContent className="rounded-3xl max-w-[90vw]">
-          <DialogHeader><DialogTitle className="text-center font-black uppercase">Rename Player</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-center font-black uppercase tracking-tight">Rename Player</DialogTitle>
+            <DialogDescription className="text-center text-xs text-gray-500">Update the player's name for the scorecard.</DialogDescription>
+          </DialogHeader>
           <div className="py-4 space-y-2">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">New Name</label>
             <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Enter name" className="h-12 rounded-2xl bg-gray-50 border-none font-bold" />
@@ -442,7 +446,10 @@ function ScoringContent() {
 
       <Dialog open={isBowlerDialogOpen} onOpenChange={setIsBowlerDialogOpen}>
         <DialogContent className="rounded-3xl max-w-[90vw]">
-          <DialogHeader><DialogTitle className="text-center uppercase font-black tracking-tighter">{!match.currentBowlerId ? 'Select Opening Bowler' : 'Select Next Bowler'}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-center uppercase font-black tracking-tighter">{!match.currentBowlerId ? 'Select Opening Bowler' : 'Select Next Bowler'}</DialogTitle>
+            <DialogDescription className="text-center text-xs text-gray-500">Pick a bowler to start the next over.</DialogDescription>
+          </DialogHeader>
           <div className="grid grid-cols-1 gap-2 py-4 max-h-[60vh] overflow-y-auto">
             {bowlingTeam.players.map((p) => (
               <Button 
@@ -464,7 +471,10 @@ function ScoringContent() {
 
       <Dialog open={isExtraDialogOpen} onOpenChange={setIsExtraDialogOpen}>
         <DialogContent className="rounded-3xl max-w-[90vw]">
-          <DialogHeader><DialogTitle className="text-center font-black uppercase">Select Extra Run</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-center font-black uppercase">Select Extra Run</DialogTitle>
+            <DialogDescription className="text-center text-xs text-gray-500">How many runs were scored on this extra delivery?</DialogDescription>
+          </DialogHeader>
           <div className="grid grid-cols-3 gap-3 py-4">
             {[0, 1, 2, 3, 4, 6].map((r) => (
               <Button key={r} variant="outline" className="h-16 rounded-2xl font-black text-2xl" onClick={() => handleAction(r, selectedExtra!)}>{r}</Button>
@@ -475,7 +485,10 @@ function ScoringContent() {
 
       <Dialog open={isWicketTypeDialogOpen} onOpenChange={setIsWicketTypeDialogOpen}>
         <DialogContent className="rounded-3xl max-w-[95vw] overflow-hidden p-0">
-          <DialogHeader className="p-6 pb-0"><DialogTitle className="text-center font-black uppercase">Wicket Method</DialogTitle></DialogHeader>
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="text-center font-black uppercase">Wicket Method</DialogTitle>
+            <DialogDescription className="text-center text-xs text-gray-500">Select how the batsman got out.</DialogDescription>
+          </DialogHeader>
           <div className="grid grid-cols-2 gap-3 p-6 bg-white">
             {['bowled', 'caught', 'lbw', 'runOut', 'stumped', 'retired'].map((w) => (
               <Button key={w} variant="outline" className="h-14 rounded-2xl font-black uppercase text-[10px]" onClick={() => handleAction(0, undefined, w as WicketType)}>{w}</Button>
@@ -487,7 +500,10 @@ function ScoringContent() {
       <Dialog open={isEndInningsDialogOpen} onOpenChange={setIsEndInningsDialogOpen}>
         <DialogContent className="rounded-3xl max-w-[90vw] text-center p-8">
           <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-          <DialogHeader><DialogTitle className="text-center uppercase font-black">{match.status === 'completed' ? 'Match Over!' : 'Innings Over!'}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-center uppercase font-black">{match.status === 'completed' ? 'Match Over!' : 'Innings Over!'}</DialogTitle>
+            <DialogDescription className="text-center text-xs text-gray-500">The current innings has come to an end.</DialogDescription>
+          </DialogHeader>
           <DialogFooter className="flex-col gap-2">
             {match.currentInnings === 1 ? (
               <Button className="w-full rounded-2xl h-14 font-black uppercase tracking-widest" onClick={() => { const nm = JSON.parse(JSON.stringify(match)); nm.currentInnings = 2; nm.currentStrikerId = nm.teamB.players[0].id; nm.currentNonStrikerId = nm.teamB.players[1].id; nm.currentBowlerId = null; updateMatch(nm); syncToFirestore(nm); setIsEndInningsDialogOpen(false); }}>Start Run Chase</Button>
