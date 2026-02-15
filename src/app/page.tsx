@@ -10,6 +10,8 @@ import {
   ShieldCheck,
   UserPlus,
   ArrowRight,
+  Download,
+  Smartphone,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,8 +45,32 @@ export default function HomePage() {
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
 
+  // PWA Install States
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+
   useEffect(() => {
     setMounted(true);
+    
+    // Check if already in standalone mode
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsStandalone(true);
+    }
+
+    // Listen for PWA install prompt
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', () => {
+      setDeferredPrompt(null);
+      setIsStandalone(true);
+      toast({ title: "App Installed!", description: "CricNinja is now on your home screen." });
+    });
+
     const checkHydration = () => {
       if (useMatchStore.persist.hasHydrated()) {
         setIsHydrated(true);
@@ -52,7 +78,11 @@ export default function HomePage() {
     };
     checkHydration();
     const unsub = useMatchStore.persist.onFinishHydration(checkHydration);
-    return () => unsub();
+    
+    return () => {
+      unsub();
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   useEffect(() => {
@@ -112,6 +142,18 @@ export default function HomePage() {
     }
   };
 
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      setShowInstallDialog(true);
+    }
+  };
+
   if (!mounted || !isHydrated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -134,6 +176,17 @@ export default function HomePage() {
           </Avatar>
           <h1 className="text-lg font-headline font-black tracking-tight text-primary">CricNinja</h1>
         </div>
+        {!isStandalone && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="rounded-full text-primary hover:bg-primary/5 font-black uppercase text-[10px] gap-2 h-9 px-4"
+            onClick={handleInstallClick}
+          >
+            <Download className="w-3.5 h-3.5" />
+            Install App
+          </Button>
+        )}
       </header>
 
       <main className="max-w-xl mx-auto p-4 space-y-6">
@@ -287,6 +340,31 @@ export default function HomePage() {
            <span className="text-[9px] font-black uppercase tracking-widest">START NEW</span>
          </Link>
       </footer>
+
+      {/* Install App Dialog */}
+      <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
+        <DialogContent className="rounded-3xl max-w-[90vw]">
+          <DialogHeader>
+            <DialogTitle className="text-center font-black uppercase tracking-tight">Install CricNinja</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4 text-center">
+            <div className="bg-primary/10 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto">
+              <Smartphone className="w-8 h-8 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <p className="font-bold text-gray-900 uppercase text-sm tracking-tight">Add to Home Screen</p>
+              <p className="text-xs text-gray-500 leading-relaxed px-4">
+                To install CricNinja, tap the <span className="font-black text-primary">Share</span> button in your browser and select <span className="font-black text-primary">"Add to Home Screen"</span>.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full h-14 rounded-2xl font-black uppercase tracking-widest" onClick={() => setShowInstallDialog(false)}>
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
