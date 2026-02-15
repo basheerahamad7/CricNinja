@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -217,28 +216,30 @@ export default function ScoringClient() {
             )}
           </div>
           
-          <CardContent className="p-4 space-y-3">
-            {[striker, nonStriker].map((p, idx) => (
-              <div key={p?.id || idx} className={`flex justify-between items-center py-2 px-3 rounded-xl ${idx === 0 ? 'bg-primary/5 border border-primary/10' : ''}`}>
-                <div className="flex items-center gap-2 overflow-hidden flex-1">
-                  <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-primary animate-pulse' : 'bg-transparent'}`} />
-                  <span className={`font-bold truncate ${idx === 0 ? 'text-primary' : 'text-gray-600'}`}>{p?.name || '---'}</span>
-                </div>
-                <div className="flex items-center gap-4 text-right">
-                  <div className="flex flex-col items-end">
-                    <span className="text-lg font-black leading-none">{p?.runs || 0}<span className="text-xs font-bold text-gray-400 ml-1">({p?.balls || 0})</span></span>
-                    <span className="text-[9px] font-bold text-gray-400 uppercase mt-1">SR {((p?.runs || 0) / (p?.balls || 1) * 100).toFixed(1)}</span>
+          <CardContent className="p-4 space-y-4">
+            <div className="space-y-3">
+              {[striker, nonStriker].map((p, idx) => (
+                <div key={p?.id || idx} className={`flex justify-between items-center py-2 px-3 rounded-xl transition-colors ${idx === 0 ? 'bg-primary/5 border border-primary/10' : ''}`}>
+                  <div className="flex items-center gap-2 overflow-hidden flex-1">
+                    <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-primary animate-pulse' : 'bg-transparent'}`} />
+                    <span className={`font-bold truncate ${idx === 0 ? 'text-primary' : 'text-gray-600'}`}>{p?.name || '---'}</span>
                   </div>
-                  <div className="text-[10px] font-bold text-gray-400 uppercase leading-tight border-l pl-3 border-gray-100 min-w-[35px]">
-                    4s: {p?.fours || 0}<br/>6s: {p?.sixes || 0}
+                  <div className="flex items-center gap-4 text-right">
+                    <div className="flex flex-col items-end">
+                      <span className="text-lg font-black leading-none">{p?.runs || 0}<span className="text-xs font-bold text-gray-400 ml-1">({p?.balls || 0})</span></span>
+                      <span className="text-[9px] font-bold text-gray-400 uppercase mt-1">SR {p && p.balls > 0 ? ((p.runs / p.balls) * 100).toFixed(1) : "0.0"}</span>
+                    </div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase leading-tight border-l pl-3 border-gray-100 min-w-[35px]">
+                      4s: {p?.fours || 0}<br/>6s: {p?.sixes || 0}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
             <Separator className="bg-gray-100" />
-            <div className="bg-secondary/5 rounded-xl p-3 border border-secondary/10 flex justify-between items-center">
+            <div className="bg-secondary/5 rounded-xl p-3 border border-secondary/10 flex justify-between items-center transition-colors">
               <div className="flex items-center gap-2 overflow-hidden flex-1">
-                <div className="w-2 h-2 rounded-full bg-secondary" />
+                <div className={`w-2 h-2 rounded-full ${bowler ? 'bg-secondary' : 'bg-transparent'}`} />
                 <span className="font-bold text-secondary truncate">{bowler?.name || '---'}</span>
               </div>
               <div className="flex items-center gap-4 text-right">
@@ -277,13 +278,23 @@ export default function ScoringClient() {
       </footer>
 
       <Dialog open={isExtraDialogOpen} onOpenChange={setIsExtraDialogOpen}>
-        <DialogContent className="rounded-3xl max-w-[90vw]"><div className="grid grid-cols-3 gap-3 py-4">{[0, 1, 2, 3, 4, 6].map((r) => (<Button key={r} variant="outline" className="h-16 rounded-2xl font-black text-2xl" onClick={() => handleAction(r, selectedExtra!)}>{r}</Button>))}</div></DialogContent>
+        <DialogContent className="rounded-3xl max-w-[90vw]">
+          <DialogHeader><DialogTitle className="text-center font-black uppercase">Select Extra Runs</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-3 gap-3 py-4">{[0, 1, 2, 3, 4, 6].map((r) => (<Button key={r} variant="outline" className="h-16 rounded-2xl font-black text-2xl" onClick={() => handleAction(r, selectedExtra!)}>{r}</Button>))}</div>
+        </DialogContent>
       </Dialog>
       <Dialog open={isWicketTypeDialogOpen} onOpenChange={setIsWicketTypeDialogOpen}>
-        <DialogContent className="rounded-3xl max-w-[95vw] overflow-hidden p-0"><div className="grid grid-cols-2 gap-3 p-6 bg-white">{['bowled', 'caught', 'lbw', 'runOut', 'stumped', 'retired', 'hitWicket'].map((w) => (<Button key={w} variant="outline" className="h-14 rounded-2xl font-black uppercase text-[10px]" onClick={() => handleAction(0, undefined, w as WicketType)}>{w}</Button>))}</div></DialogContent>
+        <DialogContent className="rounded-3xl max-w-[95vw] overflow-hidden p-0">
+          <DialogHeader className="p-6 pb-0"><DialogTitle className="text-center font-black uppercase">Wicket Method</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-3 p-6 bg-white">{['bowled', 'caught', 'lbw', 'runOut', 'stumped', 'retired', 'hitWicket'].map((w) => (<Button key={w} variant="outline" className="h-14 rounded-2xl font-black uppercase text-[10px]" onClick={() => handleAction(0, undefined, w as WicketType)}>{w}</Button>))}</div>
+        </DialogContent>
       </Dialog>
       <Dialog open={isEndInningsDialogOpen} onOpenChange={setIsEndInningsDialogOpen}>
-        <DialogContent className="rounded-3xl max-w-[90vw] text-center p-8"><Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-4" /><DialogHeader><DialogTitle className="text-center">{match.status === 'completed' ? 'Match Over!' : 'Innings Over!'}</DialogTitle></DialogHeader><DialogFooter className="flex-col gap-2">{match.currentInnings === 1 ? (<Button className="w-full rounded-2xl h-14 font-black" onClick={() => { const nm = JSON.parse(JSON.stringify(match)); nm.currentInnings = 2; nm.currentStrikerId = nm.teamB.players[0].id; nm.currentNonStrikerId = nm.teamB.players[1].id; nm.currentBowlerId = nm.teamA.players[nm.teamA.players.length-1].id; updateMatch(nm); setIsEndInningsDialogOpen(false); }}>Start Run Chase</Button>) : (<Button className="w-full rounded-2xl h-14 font-black" onClick={() => router.push(`/matches/${matchId}/scorecard`)}>View Results</Button>)}</DialogFooter></DialogContent>
+        <DialogContent className="rounded-3xl max-w-[90vw] text-center p-8">
+          <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+          <DialogHeader><DialogTitle className="text-center font-black uppercase">{match.status === 'completed' ? 'Match Over!' : 'Innings Over!'}</DialogTitle></DialogHeader>
+          <DialogFooter className="flex-col gap-2">{match.currentInnings === 1 ? (<Button className="w-full rounded-2xl h-14 font-black" onClick={() => { const nm = JSON.parse(JSON.stringify(match)); nm.currentInnings = 2; nm.currentStrikerId = nm.teamB.players[0].id; nm.currentNonStrikerId = nm.teamB.players[1].id; nm.currentBowlerId = nm.teamA.players[nm.teamA.players.length-1].id; updateMatch(nm); setIsEndInningsDialogOpen(false); }}>Start Run Chase</Button>) : (<Button className="w-full rounded-2xl h-14 font-black" onClick={() => router.push(`/matches/${matchId}/scorecard`)}>View Results</Button>)}</DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );
