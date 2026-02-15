@@ -53,7 +53,7 @@ export default function HomePage() {
   useEffect(() => {
     setMounted(true);
     
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
       setIsStandalone(true);
     }
 
@@ -204,7 +204,7 @@ export default function HomePage() {
             </DialogTrigger>
             <DialogContent className="rounded-3xl max-w-[90vw]">
               <DialogHeader>
-                <DialogTitle className="text-center font-black uppercase">Join Scoreboard</DialogTitle>
+                <DialogTitle className="text-center font-black uppercase tracking-tight">Join Scoreboard</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
