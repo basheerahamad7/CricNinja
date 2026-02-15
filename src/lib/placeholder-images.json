@@ -1,0 +1,22 @@
+{
+  "placeholderImages": [
+    {
+      "id": "cricket-hero",
+      "description": "Cricket player batting in a stadium",
+      "imageUrl": "https://images.unsplash.com/photo-1567943346767-72780dd14cd5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjcmlja2V0JTIwbWF0Y2h8ZW58MHx8fHwxNzY5ODQ0MDc2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cricket match"
+    },
+    {
+      "id": "team-logo-a",
+      "description": "Generic cricket team logo A",
+      "imageUrl": "https://images.unsplash.com/photo-1760132800504-b1ffe29b7a33?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzcG9ydHMlMjBsb2dvfGVufDB8fHx8MTc2OTg0NDA3Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sports logo"
+    },
+    {
+      "id": "team-logo-b",
+      "description": "Generic cricket team logo B",
+      "imageUrl": "https://images.unsplash.com/photo-1606136968306-ab2868cc1f21?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxzcG9ydHMlMjBsb2dvfGVufDB8fHx8MTc2OTg0NDA3Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sports logo"
+    }
+  ]
+}

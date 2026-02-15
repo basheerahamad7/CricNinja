@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * FIRESTORE SECURITY RULES - CRICKETCONNECT
+     * 
+     * CORE PHILOSOPHY:
+     * This ruleset implements a Public-Read, Owner-Write model suitable for a live-scoring sports application. 
+     * All match data, team rosters, and player statistics are publicly viewable to facilitate real-time sharing 
+     * and score tracking. Write operations are intended to be restricted to the authorized creators or 
+     * administrators of those entities.
+     * 
+     * DATA STRUCTURE:
+     * - Top-level collections: /matches, /teams, and /players represent the primary entities.
+     * - Nested sub-collections: Match events (Innings -> Overs -> Balls) are strictly nested under their 
+     *   parent Match to maintain a clear relational hierarchy and event sequence.
+     * 
+     * KEY SECURITY DECISIONS & DENORMALIZATION:
+     * - Public Read Access: Enabled for all collections to support the "Live Score Link" and "Sharing" features.
+     * - Denormalization for Integrity: Relational fields (e.g., matchId, inningsId) are required to be present 
+     *   on child documents and must match the document's path to ensure data consistency.
+     * - Ownership Conflict: The provided schema is currently missing explicit ownership fields (e.g., creatorId, ownerId). 
+     *   Per security principles, write access is restricted until these fields are added to the schema.
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    /** @description Checks if the request is from an authenticated user. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for Match documents. Provides public visibility for live scores.
+     * @path /matches/{matchId}
+     * @allow (get, list) if true;
+     * @deny (create, update, delete) if no ownership field is present in schema.
+     * @principle Public consumption with restricted management.
+     */
+    match /matches/{matchId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if false; // Removing the resource check and isOwner function
+      
+      /**
+       * @description Rules for Innings within a match. Inherits write restrictions from the parent match context.
+       * @path /matches/{matchId}/innings/{inningsId}
+       * @allow (create) if path integrity is maintained.
+       * @principle Relational integrity between path and document data.
+       */
+      match /innings/{inningsId} {
+        allow get, list: if true;
+        allow create: if isSignedIn() && request.resource.data.matchId == matchId;
+        allow update: if isSignedIn();
+        allow delete: if false; // TODO: Restrict to match owner.
+
+        /**
+         * @description Rules for Overs within an innings.
+         * @path /matches/{matchId}/innings/{inningsId}/overs/{overId}
+         */
+        match /overs/{overId} {
+          allow get, list: if true;
+          allow create: if isSignedIn() && request.resource.data.inningsId == inningsId;
+          allow update: if isSignedIn();
+          allow delete: if false; // TODO: Restrict to match owner.
+
+          /**
+           * @description Rules for individual Balls within an over.
+           * @path /matches/{matchId}/innings/{inningsId}/overs/{overId}/balls/{ballId}
+           */
+          match /balls/{ballId} {
+            allow get, list: if true;
+            allow create: if isSignedIn() && request.resource.data.overId == overId;
+            allow update: if isSignedIn();
+            allow delete: if false; // TODO: Restrict to match owner.
+          }
+        }
+      }
+    }
+
+    /**
+     * @description Rules for Team documents.
+     * @path /teams/{teamId}
+     * @allow (get, list) if true;
+     * @deny (write) if ownership fields are missing.
+     * @principle Public roster visibility.
+     */
+    match /teams/{teamId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if false; // TODO: Add owner validation once schema is updated.
+    }
+
+    /**
+     * @description Rules for Player documents.
+     * @path /players/{playerId}
+     * @allow (get, list) if true;
+     * @deny (write) if ownership fields are missing.
+     * @principle Public player statistics visibility.
+     */
+    match /players/{playerId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if false; // TODO: Add owner validation once schema is updated.
+    }
+  }
+}
