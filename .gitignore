@@ -1,2 +1,4 @@
-.env
-# Sensitive files
+.next/
+.firebase/
+node_modules/
+.vercel/

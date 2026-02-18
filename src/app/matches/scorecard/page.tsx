@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -54,9 +53,9 @@ function ScorecardContent() {
   }, [matches, matchId, isHydrated]);
 
   const isOwner = useMemo(() => {
-    if (!match || !user) return matches.some(m => m.id === match?.id);
-    return match.ownerId === user.uid || matches.some(m => m.id === match.id);
-  }, [match, matches, user]);
+    if (!match) return false;
+    return matches.some(m => m.id === match.id);
+  }, [match, matches]);
 
   const { winner, mvp } = useMemo((): { winner: { name: string; margin: string } | null; mvp: Player | null } => {
     if (!match) return { winner: null, mvp: null };
@@ -164,9 +163,9 @@ function ScorecardContent() {
 
   if (!match) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <Trophy className="w-16 h-16 text-gray-200 mb-4" />
-        <h2 className="text-xl font-black uppercase">Scorecard Unavailable</h2>
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-background">
+        <Trophy className="w-16 h-16 text-muted-foreground/20 mb-4" />
+        <h2 className="text-xl font-black uppercase text-foreground">Scorecard Unavailable</h2>
         <Button className="mt-6 rounded-2xl px-8 h-12 font-black uppercase tracking-widest" onClick={() => router.push('/')}>Go Home</Button>
       </div>
     );
@@ -178,33 +177,33 @@ function ScorecardContent() {
   const innings2BowlingTeam = match.teamA.id === match.innings2.battingTeamId ? match.teamB : match.teamA;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-body">
-      <header className="bg-primary text-white p-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+    <div className="min-h-screen bg-background pb-24 font-body">
+      <header className="bg-primary text-primary-foreground p-4 flex items-center justify-between sticky top-0 z-10 shadow-sm backdrop-blur-md bg-primary/90">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push(`/matches/scoring?id=${matchId}`)} className="text-white">
+          <Button variant="ghost" size="icon" onClick={() => router.push(`/matches/scoring?id=${matchId}`)} className="text-primary-foreground">
             <ArrowLeft className="h-6 w-6" />
           </Button>
           <h1 className="text-xl font-bold uppercase tracking-tight">Match Result</h1>
         </div>
         <div className="flex items-center">
-            <Button variant="ghost" size="icon" onClick={handleShare} className="text-white">
+            <Button variant="ghost" size="icon" onClick={handleShare} className="text-primary-foreground">
                 <Share2 className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => window.print()} className="text-white">
+            <Button variant="ghost" size="icon" onClick={() => window.print()} className="text-primary-foreground">
                 <Printer className="h-5 w-5" />
             </Button>
         </div>
       </header>
 
       <main className="max-w-xl mx-auto p-4 space-y-6">
-        <Card className="border-none shadow-xl rounded-[2.5rem] text-center p-8 bg-white ring-1 ring-gray-100">
+        <Card className="border-none shadow-xl rounded-[2.5rem] text-center p-8 bg-card ring-1 ring-border">
           <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-          <CardTitle className="text-2xl font-black uppercase mb-4">{match.teamA.name} vs {match.teamB.name}</CardTitle>
+          <CardTitle className="text-2xl font-black uppercase mb-4 text-foreground">{match.teamA.name} vs {match.teamB.name}</CardTitle>
           
           {winner && (
             <div className="mt-2 space-y-2">
               <p className="text-primary font-black text-3xl uppercase">{winner.name} WON!</p>
-              <p className="text-gray-400 font-bold uppercase text-xs tracking-[0.2em]">BY {winner.margin}</p>
+              <p className="text-muted-foreground font-bold uppercase text-xs tracking-[0.2em]">BY {winner.margin}</p>
             </div>
           )}
 
@@ -216,12 +215,12 @@ function ScorecardContent() {
                 <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <div className="w-10 h-10 bg-background rounded-full flex items-center justify-center shadow-sm">
                   <User className="w-6 h-6 text-primary" />
                 </div>
                 <div className="text-left">
-                  <p className="font-black text-lg">{mvp.name}</p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">
+                  <p className="font-black text-lg text-foreground">{mvp.name}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">
                     {mvp.runs} runs • {mvp.wickets} wickets
                   </p>
                 </div>
@@ -254,7 +253,7 @@ function ScorecardContent() {
         </Card>
 
         <Tabs defaultValue="innings1" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-gray-200/50 rounded-2xl p-1 mb-6">
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50 rounded-2xl p-1 mb-6">
             <TabsTrigger value="innings1" className="font-black text-[10px] tracking-widest">{innings1Team.name}</TabsTrigger>
             <TabsTrigger value="innings2" className="font-black text-[10px] tracking-widest">{innings2Team.name}</TabsTrigger>
           </TabsList>
@@ -298,16 +297,16 @@ function ScorecardContent() {
         <DialogContent className="rounded-3xl max-w-[90vw]">
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase tracking-tighter">Rename Player</DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500">Update the player's name for the final scorecard.</DialogDescription>
+            <DialogDescription className="text-center text-xs text-muted-foreground">Update the player's name for the final scorecard.</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Player Name</label>
-              <input 
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Player Name</label>
+              <Input 
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Enter new name"
-                className="h-12 w-full rounded-2xl bg-gray-50 border-none px-4 font-bold outline-none"
+                className="h-12 w-full rounded-2xl bg-muted/50 border-none px-4 font-bold outline-none"
               />
             </div>
           </div>
@@ -323,23 +322,23 @@ function ScorecardContent() {
         <DialogContent className="rounded-3xl max-w-[90vw] p-6">
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase tracking-tight">Share Scorecard</DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500 px-4">
+            <DialogDescription className="text-center text-xs text-muted-foreground px-4">
               Share this scorecard with others. They can view it on the web or join the match in the app using the Match UID.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Match UID (For App)</label>
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Match UID (For App)</label>
               <div className="flex gap-2">
-                <div className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-mono text-xs break-all select-all">{match.id}</div>
+                <div className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-3 font-mono text-xs break-all select-all">{match.id}</div>
                 <Button variant="outline" size="icon" className="shrink-0 rounded-xl h-auto" onClick={() => copyToClipboard(match.id, 'uid')}>{copiedType === 'uid' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}</Button>
               </div>
             </div>
-            <Separator className="bg-gray-100" />
+            <Separator className="bg-border/50" />
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Public Scorecard Link</label>
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Public Scorecard Link</label>
               <div className="flex gap-2">
-                <div className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-mono text-[10px] break-all select-all text-primary">{`${origin}/live?id=${match.id}`}</div>
+                <div className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-3 font-mono text-[10px] break-all select-all text-primary">{`${origin}/live?id=${match.id}`}</div>
                 <Button variant="outline" size="icon" className="shrink-0 rounded-xl h-auto" onClick={() => copyToClipboard(`${origin}/live?id=${match.id}`, 'link')}>{copiedType === 'link' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}</Button>
               </div>
             </div>
@@ -354,8 +353,8 @@ function ScorecardContent() {
 function InningsSection({ battingTeam, bowlingTeam, runs, wickets, balls, isOwner, onRename, onAddPlayer }: any) {
   return (
     <div className="space-y-4">
-      <Card className="overflow-hidden rounded-[2rem] border-none shadow-lg ring-1 ring-gray-100 bg-white">
-        <div className="bg-primary text-white p-6 flex justify-between items-end">
+      <Card className="overflow-hidden rounded-[2rem] border-none shadow-lg ring-1 ring-border bg-card">
+        <div className="bg-primary text-primary-foreground p-6 flex justify-between items-end">
           <div>
             <span className="font-black uppercase text-[10px] opacity-70 block mb-1">Innings Total</span>
             <span className="text-4xl font-black">{runs}<span className="text-xl opacity-60 ml-1">/{wickets}</span></span>
@@ -368,7 +367,7 @@ function InningsSection({ battingTeam, bowlingTeam, runs, wickets, balls, isOwne
               <Button 
                 variant="secondary" 
                 size="sm" 
-                className="h-7 px-2 text-[10px] font-black uppercase gap-1 rounded-lg bg-white/20 hover:bg-white/30 text-white border-none"
+                className="h-7 px-2 text-[10px] font-black uppercase gap-1 rounded-lg bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-none"
                 onClick={onAddPlayer}
               >
                 <UserPlus className="w-3 h-3" /> Add Player
@@ -377,7 +376,7 @@ function InningsSection({ battingTeam, bowlingTeam, runs, wickets, balls, isOwne
           </div>
         </div>
         <Table>
-          <TableHeader className="bg-gray-50/50">
+          <TableHeader className="bg-muted/30">
             <TableRow>
               <TableHead className="font-black uppercase text-[10px]">Batter</TableHead>
               <TableHead className="text-center font-black uppercase text-[10px]">R</TableHead>
@@ -396,19 +395,19 @@ function InningsSection({ battingTeam, bowlingTeam, runs, wickets, balls, isOwne
                   >
                     {p.name}
                   </p>
-                  {p.isOut && <p className="text-[9px] text-red-500 uppercase font-black">{p.howOut || 'out'}</p>}
+                  {p.isOut && <p className="text-[9px] text-destructive uppercase font-black">{p.howOut || 'out'}</p>}
                 </TableCell>
-                <TableCell className="text-center font-black text-base">{p.runs}</TableCell>
-                <TableCell className="text-center text-gray-400 text-xs font-bold">{p.balls}</TableCell>
-                <TableCell className="text-center text-gray-400 text-[10px]">{p.fours || 0}/{p.sixes || 0}</TableCell>
-                <TableCell className="text-center font-mono text-[10px]">{p.balls > 0 ? ((p.runs/p.balls)*100).toFixed(1) : "0.0"}</TableCell>
+                <TableCell className="text-center font-black text-base tabular-nums">{p.runs}</TableCell>
+                <TableCell className="text-center text-muted-foreground text-xs font-bold tabular-nums">{p.balls}</TableCell>
+                <TableCell className="text-center text-muted-foreground text-[10px] tabular-nums">{p.fours || 0}/{p.sixes || 0}</TableCell>
+                <TableCell className="text-center font-mono text-[10px] tabular-nums">{p.balls > 0 ? ((p.runs/p.balls)*100).toFixed(1) : "0.0"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
 
-      <Card className="overflow-hidden rounded-[2rem] border-none shadow-md ring-1 ring-gray-100 bg-white">
+      <Card className="overflow-hidden rounded-[2rem] border-none shadow-md ring-1 ring-border bg-card">
         <Table>
           <TableHeader className="bg-secondary/5">
             <TableRow>
@@ -431,11 +430,11 @@ function InningsSection({ battingTeam, bowlingTeam, runs, wickets, balls, isOwne
                     {p.name}
                   </p>
                 </TableCell>
-                <TableCell className="text-center text-xs">{Math.floor(p.oversBowled)}.{Math.round((p.oversBowled % 1) * 10)}</TableCell>
-                <TableCell className="text-center text-xs font-bold text-secondary">{p.maidens || 0}</TableCell>
-                <TableCell className="text-center text-xs">{p.runsConceded}</TableCell>
-                <TableCell className="text-center font-black text-sm text-primary">{p.wickets}</TableCell>
-                <TableCell className="text-center font-mono text-[10px]">{(p.runsConceded / (Math.floor(p.oversBowled) + (p.oversBowled % 1) * 10 / 6) || 0).toFixed(2)}</TableCell>
+                <TableCell className="text-center text-xs tabular-nums">{Math.floor(p.oversBowled)}.{Math.round((p.oversBowled % 1) * 10)}</TableCell>
+                <TableCell className="text-center text-xs font-bold text-secondary tabular-nums">{p.maidens || 0}</TableCell>
+                <TableCell className="text-center text-xs tabular-nums">{p.runsConceded}</TableCell>
+                <TableCell className="text-center font-black text-sm text-primary tabular-nums">{p.wickets}</TableCell>
+                <TableCell className="text-center font-mono text-[10px] tabular-nums">{(p.runsConceded / (Math.floor(p.oversBowled) + (p.oversBowled % 1) * 10 / 6) || 0).toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -447,7 +446,7 @@ function InningsSection({ battingTeam, bowlingTeam, runs, wickets, balls, isOwne
 
 export default function ScorecardPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center font-black uppercase tracking-widest text-[10px] text-gray-400">Loading Scorecard...</div>}>
+    <Suspense fallback={<div className="p-8 text-center font-black uppercase tracking-widest text-[10px] text-muted-foreground">Loading Scorecard...</div>}>
       <ScorecardContent />
     </Suspense>
   );

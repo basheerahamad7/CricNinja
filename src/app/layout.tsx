@@ -1,10 +1,11 @@
+
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
+import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
 
-// Professional cricket bat icon for branding and favicon
 const cricketBatIcon = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏏</text></svg>`;
 const shareImage = 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?q=80&w=1200&h=630&auto=format&fit=crop';
 
@@ -14,18 +15,7 @@ export const metadata: Metadata = {
   keywords: ['cricket scoring app', 'local cricket', 'live scores', 'cricket stats', 'CricNinja', 'scorecard'],
   icons: {
     icon: [{ url: cricketBatIcon, type: 'image/svg+xml' }],
-    apple: [
-      { url: cricketBatIcon },
-      { url: cricketBatIcon, sizes: '57x57' },
-      { url: cricketBatIcon, sizes: '60x60' },
-      { url: cricketBatIcon, sizes: '72x72' },
-      { url: cricketBatIcon, sizes: '76x76' },
-      { url: cricketBatIcon, sizes: '114x114' },
-      { url: cricketBatIcon, sizes: '120x120' },
-      { url: cricketBatIcon, sizes: '144x144' },
-      { url: cricketBatIcon, sizes: '152x152' },
-      { url: cricketBatIcon, sizes: '180x180' },
-    ],
+    apple: [{ url: cricketBatIcon }],
   },
   openGraph: {
     title: 'CricNinja | Pro Live Cricket Scoring',
@@ -51,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -71,10 +61,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
       </head>
       <body className="font-body antialiased bg-background safe-paddings">
-        <FirebaseClientProvider>
-          {children}
-        </FirebaseClientProvider>
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <FirebaseClientProvider>
+            {children}
+          </FirebaseClientProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
