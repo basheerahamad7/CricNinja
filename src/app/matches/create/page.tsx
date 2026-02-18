@@ -147,52 +147,52 @@ export default function CreateMatchPage() {
         </div>
 
         <section className="grid md:grid-cols-2 gap-8">
-          <Card className="md:col-span-2 shadow-sm border-none bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
-            <CardHeader className="flex flex-row items-center gap-2 border-b bg-gray-50/50">
+          <Card className="md:col-span-2 shadow-sm border-none bg-card rounded-3xl overflow-hidden ring-1 ring-border">
+            <CardHeader className="flex flex-row items-center gap-2 border-b bg-muted/30">
               <Settings2 className="w-5 h-5 text-primary" />
               <CardTitle className="text-sm font-black uppercase tracking-widest">Match Settings</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-gray-400">Overs per Innings</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">Overs per Innings</Label>
                   <Input 
                     type="number" 
                     value={overs} 
                     onChange={(e) => setOvers(Number(e.target.value))}
-                    className="text-lg font-black bg-gray-50 border-none rounded-xl"
+                    className="text-lg font-black bg-muted/50 border-none rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-gray-400">Series Name</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">Series Name</Label>
                   <Input 
                     value={series} 
                     placeholder="Enter Series Name"
                     onChange={(e) => setSeries(e.target.value)}
-                    className="bg-gray-50 border-none rounded-xl font-bold"
+                    className="bg-muted/50 border-none rounded-xl font-bold"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-gray-400">Venue / Stadium</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">Venue / Stadium</Label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input 
                       value={venue} 
                       placeholder="Enter Venue"
                       onChange={(e) => setVenue(e.target.value)}
-                      className="pl-10 bg-gray-50 border-none rounded-xl font-bold"
+                      className="pl-10 bg-muted/50 border-none rounded-xl font-bold"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-gray-400">Umpires (comma separated)</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">Umpires (comma separated)</Label>
                   <div className="relative">
-                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input 
                       value={umpires} 
                       placeholder="e.g. John Doe, Jane Smith"
                       onChange={(e) => setUmpires(e.target.value)}
-                      className="pl-10 bg-gray-50 border-none rounded-xl font-bold"
+                      className="pl-10 bg-muted/50 border-none rounded-xl font-bold"
                     />
                   </div>
                 </div>
@@ -243,7 +243,7 @@ function TeamConfig({ title, teamName, setTeamName, players, addPlayer, removePl
   const borderColorClass = color === 'primary' ? 'border-primary/10' : 'border-secondary/10';
 
   return (
-    <Card className="shadow-sm border-none bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
+    <Card className="shadow-sm border-none bg-card rounded-3xl overflow-hidden ring-1 ring-border">
       <CardHeader className={`${bgColorClass} border-b ${borderColorClass}`}>
         <div className="flex justify-between items-center">
           <CardTitle className={`${colorClass} font-black text-xs uppercase tracking-widest`}>{title}</CardTitle>
@@ -252,19 +252,19 @@ function TeamConfig({ title, teamName, setTeamName, players, addPlayer, removePl
       </CardHeader>
       <CardContent className="p-4 space-y-4">
         <div className="space-y-2">
-          <Label className="text-[10px] font-black uppercase text-gray-400">Team Name</Label>
+          <Label className="text-[10px] font-black uppercase text-muted-foreground">Team Name</Label>
           <div className="relative">
-            <Edit2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+            <Edit2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
             <Input 
               value={teamName} 
               onChange={(e) => setTeamName(e.target.value)}
-              className="font-black border-none bg-gray-50 rounded-xl pl-10"
+              className="font-black border-none bg-muted/50 rounded-xl pl-10"
             />
           </div>
         </div>
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <Label className="text-[10px] font-black uppercase text-gray-400">Squad ({players.length})</Label>
+            <Label className="text-[10px] font-black uppercase text-muted-foreground">Squad ({players.length})</Label>
             <Button variant="ghost" size="sm" onClick={addPlayer} className={`h-7 px-2 gap-1 text-[10px] font-black uppercase ${colorClass}`}>
               <UserPlus className="w-3 h-3" /> Add Player
             </Button>
@@ -273,17 +273,17 @@ function TeamConfig({ title, teamName, setTeamName, players, addPlayer, removePl
             {players.map((player: any) => (
               <div key={player.id} className="flex gap-2 group">
                 <div className="relative flex-1">
-                  <Edit2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Edit2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <Input 
                     value={player.name} 
                     onChange={(e) => updatePlayerName(player.id, e.target.value)}
-                    className="bg-gray-50/50 border-none h-10 text-sm font-bold rounded-xl pr-10 pl-8"
+                    className="bg-muted/30 border-none h-10 text-sm font-bold rounded-xl pr-10 pl-8"
                   />
                 </div>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-10 w-10 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                  className="h-10 w-10 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-xl"
                   onClick={() => removePlayer(player.id)}
                   disabled={players.length <= 2}
                 >

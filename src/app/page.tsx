@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -24,6 +23,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { BannerAd } from '@/components/BannerAd';
 import { Badge } from '@/components/ui/badge';
+import { ModeToggle } from '@/components/mode-toggle';
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,6 @@ export default function HomePage() {
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
 
-  // PWA Install States
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -155,18 +154,18 @@ export default function HomePage() {
 
   if (!mounted || !isHydrated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="font-black text-[10px] text-gray-400 uppercase tracking-widest">Warming Up...</p>
+          <p className="font-black text-[10px] text-muted-foreground uppercase tracking-widest">Warming Up...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-body">
-      <header className="sticky top-0 z-50 bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm">
+    <div className="min-h-screen bg-background pb-24 font-body">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8 ring-2 ring-primary/10">
             <AvatarFallback className="bg-primary text-white text-[10px] font-black uppercase">
@@ -175,26 +174,29 @@ export default function HomePage() {
           </Avatar>
           <h1 className="text-lg font-headline font-black tracking-tight text-primary">CricNinja</h1>
         </div>
-        {!isStandalone && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="rounded-full text-primary hover:bg-primary/5 font-black uppercase text-[10px] gap-2 h-9 px-4"
-            onClick={handleInstallClick}
-          >
-            <Download className="w-3.5 h-3.5" />
-            Install App
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ModeToggle />
+          {!isStandalone && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="rounded-full text-primary hover:bg-primary/5 font-black uppercase text-[10px] gap-2 h-9 px-4"
+              onClick={handleInstallClick}
+            >
+              <Download className="w-3.5 h-3.5" />
+              Install App
+            </Button>
+          )}
+        </div>
       </header>
 
       <main className="max-w-xl mx-auto p-4 space-y-6">
         <section className="py-2 flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-headline font-bold text-gray-900 leading-tight">
+            <h2 className="text-2xl font-headline font-bold text-foreground leading-tight">
               Hi, Scorer! 👋
             </h2>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               Live scoring and real-time match tracking.
             </p>
           </div>
@@ -207,16 +209,16 @@ export default function HomePage() {
             <DialogContent className="rounded-3xl max-w-[90vw]">
               <DialogHeader>
                 <DialogTitle className="text-center font-black uppercase tracking-tight">Join Scoreboard</DialogTitle>
-                <DialogDescription className="text-center text-xs text-gray-500">Enter the unique Match UID to join as a spectator or scorer.</DialogDescription>
+                <DialogDescription className="text-center text-xs text-muted-foreground">Enter the unique Match UID to join as a spectator or scorer.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <p className="text-[10px] text-gray-400 font-black uppercase text-center tracking-widest">Enter Match UID</p>
+                  <p className="text-[10px] text-muted-foreground font-black uppercase text-center tracking-widest">Enter Match UID</p>
                   <Input 
                     placeholder="e.g. cb7497de-fa2c..." 
                     value={joinId}
                     onChange={(e) => setJoinId(e.target.value)}
-                    className="h-12 rounded-2xl border-gray-100 bg-gray-50 font-mono text-center text-xs"
+                    className="h-12 rounded-2xl border-border bg-muted/50 font-mono text-center text-xs"
                   />
                 </div>
               </div>
@@ -255,23 +257,23 @@ export default function HomePage() {
           <div className="bg-secondary p-3 rounded-2xl"><ShieldCheck className="w-6 h-6 text-white" /></div>
           <div>
             <Badge className="bg-secondary text-white border-none text-[10px] mb-1 font-black">PRO STATS</Badge>
-            <h3 className="text-sm font-black text-gray-900 leading-tight">Advanced Strike Rate & Economy tracking</h3>
+            <h3 className="text-sm font-black text-foreground leading-tight">Advanced Strike Rate & Economy tracking</h3>
           </div>
         </section>
 
         {isLoadingMatches ? (
           <div className="text-center py-10">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            <p className="text-[10px] font-bold text-gray-400 uppercase">Syncing history...</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase">Syncing history...</p>
           </div>
         ) : recentMatches.length > 0 ? (
           <section className="space-y-4">
             <div className="flex justify-between items-center px-1">
-              <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Clock className="w-4 h-4" /> 
                 RECENT MATCHES
               </h2>
-              <Badge variant="outline" className="text-[9px] font-black uppercase border-gray-200 text-gray-400">
+              <Badge variant="outline" className="text-[9px] font-black uppercase border-border text-muted-foreground">
                 LATEST 3
               </Badge>
             </div>
@@ -285,31 +287,31 @@ export default function HomePage() {
                     key={match.id} 
                     href={isLocalScorer ? `/matches/scoring?id=${match.id}` : `/live?id=${match.id}`}
                   >
-                    <Card className="bg-white border-none shadow-sm rounded-2xl ring-1 ring-gray-100 active:scale-[0.99] transition-transform overflow-hidden">
+                    <Card className="bg-card border-none shadow-sm rounded-2xl ring-1 ring-border active:scale-[0.99] transition-transform overflow-hidden">
                       <CardContent className="p-0">
                         <div className="p-5 flex justify-between items-center">
                           <div className="space-y-1 overflow-hidden flex-1">
                             <div className="flex items-center gap-2">
-                              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${match.status === 'ongoing' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400'}`}>
+                              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${match.status === 'ongoing' ? 'bg-red-500/10 text-red-500' : 'bg-muted text-muted-foreground'}`}>
                                 {match.status}
                               </span>
                               {isLocalScorer ? (
                                 <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black uppercase">SCORER</Badge>
                               ) : (
-                                <Badge variant="outline" className="text-[8px] font-black border-gray-100 text-gray-400 uppercase">SPECTATING</Badge>
+                                <Badge variant="outline" className="text-[8px] font-black border-border text-muted-foreground uppercase">SPECTATING</Badge>
                               )}
                             </div>
-                            <p className="font-bold text-gray-800 truncate">{match.teamA.name} vs {match.teamB.name}</p>
-                            <p className="text-[9px] text-gray-400 font-bold uppercase">{format(match.timestamp, 'MMM d, h:mm a')}</p>
+                            <p className="font-bold text-foreground truncate">{match.teamA.name} vs {match.teamB.name}</p>
+                            <p className="text-[9px] text-muted-foreground font-bold uppercase">{format(match.timestamp, 'MMM d, h:mm a')}</p>
                           </div>
                           <div className="text-right pl-4">
                             <p className="text-2xl font-black text-primary tabular-nums">
                               {match.currentInnings === 1 ? match.innings1.totalRuns : match.innings2.totalRuns}
                               <span className="text-xs opacity-40">/{match.currentInnings === 1 ? match.innings1.totalWickets : match.innings2.totalWickets}</span>
                             </p>
-                            <p className="text-[9px] text-gray-400 font-black uppercase">Overs {Math.floor((match.currentInnings === 1 ? match.innings1.totalBalls : match.innings2.totalBalls) / 6)}.{ (match.currentInnings === 1 ? match.innings1.totalBalls : match.innings2.totalBalls) % 6 }</p>
+                            <p className="text-[9px] text-muted-foreground font-black uppercase">Overs {Math.floor((match.currentInnings === 1 ? match.innings1.totalBalls : match.innings2.totalBalls) / 6)}.{ (match.currentInnings === 1 ? match.innings1.totalBalls : match.innings2.totalBalls) % 6 }</p>
                           </div>
-                          <ArrowRight className="w-4 h-4 text-gray-200 ml-4 shrink-0" />
+                          <ArrowRight className="w-4 h-4 text-muted-foreground/30 ml-4 shrink-0" />
                         </div>
                       </CardContent>
                     </Card>
@@ -319,23 +321,23 @@ export default function HomePage() {
             </div>
           </section>
         ) : (
-          <div className="bg-white rounded-3xl p-10 text-center shadow-sm border border-dashed border-gray-200">
-            <p className="text-gray-400 font-black uppercase text-[10px] tracking-widest">
+          <div className="bg-card rounded-3xl p-10 text-center shadow-sm border border-dashed border-border">
+            <p className="text-muted-foreground font-black uppercase text-[10px] tracking-widest">
               No recent matches
             </p>
-            <p className="text-[10px] text-gray-300 mt-1 uppercase font-bold">
+            <p className="text-[10px] text-muted-foreground/60 mt-1 uppercase font-bold">
               Start scoring a new game to see it here
             </p>
           </div>
         )}
       </main>
 
-      <footer className="fixed bottom-0 inset-x-0 bg-white/80 backdrop-blur-md border-t px-8 py-3 flex justify-around items-center safe-paddings">
+      <footer className="fixed bottom-0 inset-x-0 bg-background/80 backdrop-blur-md border-t px-8 py-3 flex justify-around items-center safe-paddings shadow-lg">
          <div className="flex flex-col items-center gap-1 text-primary cursor-pointer">
            <Trophy className="w-6 h-6" />
            <span className="text-[9px] font-black uppercase">MY GAMES</span>
          </div>
-         <Link href="/matches/create" className="flex flex-col items-center gap-1 text-gray-300">
+         <Link href="/matches/create" className="flex flex-col items-center gap-1 text-muted-foreground">
            <PlusCircle className="w-6 h-6" />
            <span className="text-[9px] font-black uppercase tracking-widest">START NEW</span>
          </Link>
@@ -345,15 +347,15 @@ export default function HomePage() {
         <DialogContent className="rounded-3xl max-w-[90vw]">
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase tracking-tight">Install CricNinja</DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500">Follow the steps below to add CricNinja to your home screen.</DialogDescription>
+            <DialogDescription className="text-center text-xs text-muted-foreground">Follow the steps below to add CricNinja to your home screen.</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4 text-center">
             <div className="bg-primary/10 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto">
               <Smartphone className="w-8 h-8 text-primary" />
             </div>
             <div className="space-y-2">
-              <p className="font-bold text-gray-900 uppercase text-sm tracking-tight">Add to Home Screen</p>
-              <p className="text-xs text-gray-500 leading-relaxed px-4">
+              <p className="font-bold text-foreground uppercase text-sm tracking-tight">Add to Home Screen</p>
+              <p className="text-xs text-muted-foreground leading-relaxed px-4">
                 To install CricNinja, tap the <span className="font-black text-primary">Share</span> button in your browser and select <span className="font-black text-primary">"Add to Home Screen"</span>.
               </p>
             </div>

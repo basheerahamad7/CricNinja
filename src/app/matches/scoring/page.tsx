@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -13,6 +12,7 @@ import {
   User,
   Copy,
   Check,
+  RefreshCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -91,10 +91,10 @@ function ScoringContent() {
 
   if (!mounted || !isHydrated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="font-black text-xs text-gray-400 uppercase tracking-widest">Warming Up...</p>
+          <p className="font-black text-xs text-muted-foreground uppercase tracking-widest">Warming Up...</p>
         </div>
       </div>
     );
@@ -102,9 +102,9 @@ function ScoringContent() {
   
   if (!match) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
-        <Trophy className="w-16 h-16 text-gray-200 mb-4" />
-        <h2 className="text-2xl font-black text-gray-900 uppercase">Match Not Found</h2>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center">
+        <Trophy className="w-16 h-16 text-muted-foreground/20 mb-4" />
+        <h2 className="text-2xl font-black text-foreground uppercase">Match Not Found</h2>
         <Button className="mt-6 rounded-2xl px-8 h-12 font-black uppercase tracking-widest" onClick={() => router.push('/')}>Go Home</Button>
       </div>
     );
@@ -236,6 +236,14 @@ function ScoringContent() {
     setIsBowlerDialogOpen(false);
   };
 
+  const handleSelectNextBatsman = (playerId: string) => {
+    const newMatch: Match = JSON.parse(JSON.stringify(match));
+    newMatch.currentStrikerId = playerId;
+    updateMatch(newMatch, false);
+    syncToFirestore(newMatch);
+    setIsWicketDialogOpen(false);
+  };
+
   const handleRenamePlayer = () => {
     if (!playerToRename || !match || !newName.trim()) return;
     const newMatch = JSON.parse(JSON.stringify(match));
@@ -268,20 +276,20 @@ function ScoringContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-body">
-      <header className="sticky top-0 z-50 bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm">
+    <div className="min-h-screen bg-background pb-24 font-body">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push('/')}><ArrowLeft className="w-5 h-5" /></Button>
           <h2 className="font-black text-xs uppercase truncate max-w-[120px]">{battingTeam.name}</h2>
         </div>
-        <Badge variant="outline" className={`text-[10px] font-black uppercase ${match.status === 'ongoing' ? 'text-red-600 border-red-200' : ''}`}>
+        <Badge variant="outline" className={`text-[10px] font-black uppercase ${match.status === 'ongoing' ? 'text-destructive border-destructive/20' : ''}`}>
           {match.status === 'ongoing' ? '🔴 LIVE' : 'FINISHED'}
         </Badge>
       </header>
 
       <main className="max-w-xl mx-auto p-4 space-y-4">
-        <Card className="bg-white rounded-3xl overflow-hidden shadow-lg border-none ring-1 ring-gray-100">
-          <div className="bg-primary text-white p-6 space-y-4">
+        <Card className="bg-card rounded-3xl overflow-hidden shadow-lg border-none ring-1 ring-border">
+          <div className="bg-primary text-primary-foreground p-6 space-y-4">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Innings {match.currentInnings}</p>
@@ -295,19 +303,19 @@ function ScoringContent() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 pt-4 border-t border-white/10">
+            <div className="flex items-center gap-4 pt-4 border-t border-primary-foreground/10">
               <div className="flex flex-col">
                 <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">CRR</span>
                 <span className="text-lg font-black">{crr.toFixed(2)}</span>
               </div>
               {match.currentInnings === 2 && (
                 <>
-                  <Separator orientation="vertical" className="h-8 bg-white/20" />
+                  <Separator orientation="vertical" className="h-8 bg-primary-foreground/20" />
                   <div className="flex flex-col">
                     <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">RRR</span>
                     <span className="text-lg font-black">{rrr.toFixed(2)}</span>
                   </div>
-                  <Badge variant="secondary" className="ml-auto bg-white/20 text-white border-none font-bold text-[10px] px-3 py-1">
+                  <Badge variant="secondary" className="ml-auto bg-primary-foreground/20 text-primary-foreground border-none font-bold text-[10px] px-3 py-1">
                     TARGET {target}
                   </Badge>
                 </>
@@ -331,16 +339,16 @@ function ScoringContent() {
                 >
                   <div className="flex items-center gap-2 overflow-hidden flex-1">
                     <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-primary animate-pulse' : 'bg-transparent'}`} />
-                    <span className={`font-bold truncate ${idx === 0 ? 'text-primary' : 'text-gray-600'}`}>
+                    <span className={`font-bold truncate ${idx === 0 ? 'text-primary' : 'text-muted-foreground'}`}>
                       {p?.name || '---'}
                     </span>
                   </div>
                   <div className="text-right flex items-center gap-4">
                     <div className="flex flex-col items-end">
-                      <span className="text-lg font-black leading-none">{p?.runs || 0}<span className="text-xs font-bold text-gray-400 ml-1">({p?.balls || 0})</span></span>
-                      <span className="text-[9px] font-bold text-gray-400 uppercase mt-1">SR {p && p.balls > 0 ? ((p.runs / p.balls) * 100).toFixed(1) : "0.0"}</span>
+                      <span className="text-lg font-black leading-none">{p?.runs || 0}<span className="text-xs font-bold text-muted-foreground/40 ml-1">({p?.balls || 0})</span></span>
+                      <span className="text-[9px] font-bold text-muted-foreground/60 uppercase mt-1">SR {p && p.balls > 0 ? ((p.runs / p.balls) * 100).toFixed(1) : "0.0"}</span>
                     </div>
-                    <div className="text-[10px] font-bold text-gray-400 uppercase leading-tight border-l pl-3 border-gray-100 min-w-[35px]">
+                    <div className="text-[10px] font-bold text-muted-foreground/40 uppercase leading-tight border-l pl-3 border-border min-w-[35px]">
                       4s: {p?.fours || 0}<br/>6s: {p?.sixes || 0}
                     </div>
                   </div>
@@ -348,7 +356,7 @@ function ScoringContent() {
               ))}
             </div>
 
-            <Separator className="bg-gray-100" />
+            <Separator className="bg-border/50" />
 
             <div 
               className={`bg-secondary/5 rounded-xl p-3 border border-secondary/10 flex justify-between items-center transition-colors`}
@@ -366,11 +374,11 @@ function ScoringContent() {
               </div>
               <div className="text-right flex items-center gap-4">
                 <div className="flex flex-col items-end">
-                  <span className="text-lg font-black text-secondary leading-none">{bowler?.wickets || 0}<span className="text-xs font-bold text-gray-400 ml-1">-{bowler?.runsConceded || 0}</span></span>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase mt-1">Econ {(bowler && bowler.oversBowled > 0 ? (bowler.runsConceded / (Math.floor(bowler.oversBowled) + (bowler.oversBowled % 1) * 10 / 6)).toFixed(2) : "0.00")}</span>
+                  <span className="text-lg font-black text-secondary leading-none">{bowler?.wickets || 0}<span className="text-xs font-bold text-muted-foreground/40 ml-1">-{bowler?.runsConceded || 0}</span></span>
+                  <span className="text-[9px] font-bold text-muted-foreground/60 uppercase mt-1">Econ {(bowler && bowler.oversBowled > 0 ? (bowler.runsConceded / (Math.floor(bowler.oversBowled) + (bowler.oversBowled % 1) * 10 / 6)).toFixed(2) : "0.00")}</span>
                 </div>
-                <div className="text-[10px] font-bold text-gray-400 border-l pl-3 border-gray-100 min-w-[40px]">
-                  Overs<br/><span className="text-gray-900">{Math.floor(bowler?.oversBowled || 0)}.{Math.round(((bowler?.oversBowled || 0) % 1) * 10)}</span>
+                <div className="text-[10px] font-bold text-muted-foreground/40 border-l pl-3 border-border min-w-[40px]">
+                  Overs<br/><span className="text-foreground">{Math.floor(bowler?.oversBowled || 0)}.{Math.round(((bowler?.oversBowled || 0) % 1) * 10)}</span>
                 </div>
               </div>
             </div>
@@ -379,33 +387,33 @@ function ScoringContent() {
 
         <div className="grid grid-cols-4 gap-3">
           {[0, 1, 2, 3, 4, 6].map((run) => (
-            <Button key={run} variant="outline" className="h-14 text-xl font-black rounded-2xl bg-white shadow-sm border-none ring-1 ring-gray-100" onClick={() => handleAction(run)}>{run}</Button>
+            <Button key={run} variant="outline" className="h-14 text-xl font-black rounded-2xl bg-card shadow-sm border-none ring-1 ring-border active:scale-95" onClick={() => handleAction(run)}>{run}</Button>
           ))}
-          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-amber-50 text-amber-600 border-none ring-1 ring-amber-100" onClick={() => handleAction(0, 'wide')}>WIDE</Button>
-          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-amber-50 text-amber-600 border-none ring-1 ring-amber-100" onClick={() => { setSelectedExtra('noBall'); setIsExtraDialogOpen(true); }}>NO BALL</Button>
-          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-gray-100 text-gray-600 border-none ring-1 ring-gray-200" onClick={() => { setSelectedExtra('legBye'); setIsExtraDialogOpen(true); }}>L.BYE</Button>
-          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-gray-100 text-gray-600 border-none ring-1 ring-gray-200" onClick={() => { setSelectedExtra('bye'); setIsExtraDialogOpen(true); }}>BYE</Button>
-          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-blue-50 text-blue-600 border-none ring-1 ring-blue-100" onClick={() => undoMatchAction(match.id)}>UNDO</Button>
-          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-red-600 text-white border-none shadow-md hover:bg-red-700" onClick={() => setIsWicketTypeDialogOpen(true)}>OUT!</Button>
+          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-amber-500/10 text-amber-600 border-none ring-1 ring-amber-500/20 active:scale-95" onClick={() => handleAction(0, 'wide')}>WIDE</Button>
+          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-amber-500/10 text-amber-600 border-none ring-1 ring-amber-500/20 active:scale-95" onClick={() => { setSelectedExtra('noBall'); setIsExtraDialogOpen(true); }}>NO BALL</Button>
+          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-muted text-muted-foreground border-none ring-1 ring-border active:scale-95" onClick={() => { setSelectedExtra('legBye'); setIsExtraDialogOpen(true); }}>L.BYE</Button>
+          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-muted text-muted-foreground border-none ring-1 ring-border active:scale-95" onClick={() => { setSelectedExtra('bye'); setIsExtraDialogOpen(true); }}>BYE</Button>
+          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-blue-500/10 text-blue-600 border-none ring-1 ring-blue-500/20 active:scale-95" onClick={() => undoMatchAction(match.id)}>UNDO</Button>
+          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-destructive text-destructive-foreground border-none shadow-md hover:bg-destructive/90 active:scale-95" onClick={() => setIsWicketTypeDialogOpen(true)}>OUT!</Button>
         </div>
       </main>
 
-      <footer className="fixed bottom-0 inset-x-0 bg-white border-t px-4 py-2 flex justify-around items-center safe-paddings shadow-2xl z-50">
+      <footer className="fixed bottom-0 inset-x-0 bg-background/80 backdrop-blur-md border-t px-4 py-2 flex justify-around items-center safe-paddings shadow-2xl z-50">
         <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-1 text-[9px] font-black text-primary uppercase"><Zap className="w-5 h-5" /> SCORING</Button>
-        <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-1 text-[9px] font-black text-gray-400 uppercase" onClick={() => router.push(`/matches/overs?id=${matchId}`)}><History className="w-5 h-5" /> TIMELINE</Button>
-        <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-1 text-[9px] font-black text-gray-400 uppercase" onClick={() => router.push(`/matches/scorecard?id=${matchId}`)}><LayoutGrid className="w-5 h-5" /> FULL CARD</Button>
-        <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-1 text-[9px] font-black text-gray-400 uppercase" onClick={handleShare}><Share2 className="w-5 h-5" /> SHARE</Button>
+        <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-1 text-[9px] font-black text-muted-foreground/40 uppercase" onClick={() => router.push(`/matches/overs?id=${matchId}`)}><History className="w-5 h-5" /> TIMELINE</Button>
+        <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-1 text-[9px] font-black text-muted-foreground/40 uppercase" onClick={() => router.push(`/matches/scorecard?id=${matchId}`)}><LayoutGrid className="w-5 h-5" /> FULL CARD</Button>
+        <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-1 text-[9px] font-black text-muted-foreground/40 uppercase" onClick={handleShare}><Share2 className="w-5 h-5" /> SHARE</Button>
       </footer>
 
       <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
         <DialogContent className="rounded-3xl max-w-[90vw]">
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase tracking-tight">Rename Player</DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500">Update the player's name for the scorecard.</DialogDescription>
+            <DialogDescription className="text-center text-xs text-muted-foreground">Update the player's name for the scorecard.</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">New Name</label>
-            <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Enter name" className="h-12 rounded-2xl bg-gray-50 border-none font-bold" />
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">New Name</label>
+            <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Enter name" className="h-12 rounded-2xl bg-muted/50 border-none font-bold" />
           </div>
           <DialogFooter><Button className="w-full h-12 rounded-2xl font-black uppercase" onClick={handleRenamePlayer}>Update Name</Button></DialogFooter>
         </DialogContent>
@@ -415,25 +423,25 @@ function ScoringContent() {
         <DialogContent className="rounded-3xl max-w-[90vw] p-6">
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase tracking-tight">Share Match</DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500 px-4">
+            <DialogDescription className="text-center text-xs text-muted-foreground px-4">
               Share this match with others. They can view the live score on the web or join as a scorer in the app using the Match UID.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Match UID (Join via App)</label>
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Match UID (Join via App)</label>
               <div className="flex gap-2">
-                <div className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-mono text-xs break-all select-all">{match.id}</div>
+                <div className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-3 font-mono text-xs break-all select-all">{match.id}</div>
                 <Button variant="outline" size="icon" className="shrink-0 rounded-xl h-auto" onClick={() => { navigator.clipboard.writeText(match.id); setCopiedType('uid'); setTimeout(() => setCopiedType(null), 2000); }}>
                   {copiedType === 'uid' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
-            <Separator className="bg-gray-100" />
+            <Separator className="bg-border/50" />
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Web Spectator Link</label>
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Web Spectator Link</label>
               <div className="flex gap-2">
-                <div className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-mono text-[10px] break-all select-all text-primary">{`${origin}/live?id=${match.id}`}</div>
+                <div className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-3 font-mono text-[10px] break-all select-all text-primary">{`${origin}/live?id=${match.id}`}</div>
                 <Button variant="outline" size="icon" className="shrink-0 rounded-xl h-auto" onClick={() => { navigator.clipboard.writeText(`${origin}/live?id=${match.id}`); setCopiedType('link'); setTimeout(() => setCopiedType(null), 2000); }}>
                   {copiedType === 'link' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                 </Button>
@@ -448,14 +456,14 @@ function ScoringContent() {
         <DialogContent className="rounded-3xl max-w-[90vw]">
           <DialogHeader>
             <DialogTitle className="text-center uppercase font-black tracking-tighter">{!match.currentBowlerId ? 'Select Opening Bowler' : 'Select Next Bowler'}</DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500">Pick a bowler to start the next over.</DialogDescription>
+            <DialogDescription className="text-center text-xs text-muted-foreground">Pick a bowler to start the next over.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-2 py-4 max-h-[60vh] overflow-y-auto">
             {bowlingTeam.players.map((p) => (
               <Button 
                 key={p.id} 
                 variant="outline" 
-                className={`h-14 rounded-2xl font-black flex justify-between px-4 ${p.id === match.currentBowlerId ? 'border-primary bg-primary/5' : ''}`}
+                className={`h-14 rounded-2xl font-black flex justify-between px-4 active:scale-95 ${p.id === match.currentBowlerId ? 'border-primary bg-primary/5' : ''}`}
                 onClick={() => handleSelectBowler(p.id)}
               >
                 <div className="flex items-center gap-3">
@@ -469,15 +477,42 @@ function ScoringContent() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isWicketDialogOpen} onOpenChange={setIsWicketDialogOpen}>
+        <DialogContent className="rounded-3xl max-w-[90vw]">
+          <DialogHeader>
+            <DialogTitle className="text-center uppercase font-black tracking-tighter">Select Next Batsman</DialogTitle>
+            <DialogDescription className="text-center text-xs text-muted-foreground">Pick a replacement for the dismissed batsman.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-2 py-4 max-h-[60vh] overflow-y-auto">
+            {battingTeam.players.filter(p => !p.isOut && p.id !== match.currentNonStrikerId && p.id !== match.currentStrikerId).map((p) => (
+              <Button 
+                key={p.id} 
+                variant="outline" 
+                className="h-14 rounded-2xl font-black flex justify-between px-4 active:scale-95"
+                onClick={() => handleSelectNextBatsman(p.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <User className="w-4 h-4 opacity-40" />
+                  <span>{p.name}</span>
+                </div>
+              </Button>
+            ))}
+            {battingTeam.players.filter(p => !p.isOut && p.id !== match.currentNonStrikerId && p.id !== match.currentStrikerId).length === 0 && (
+              <p className="text-center text-xs text-muted-foreground py-4 italic">No more players available in squad.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isExtraDialogOpen} onOpenChange={setIsExtraDialogOpen}>
         <DialogContent className="rounded-3xl max-w-[90vw]">
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase">Select Extra Run</DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500">How many runs were scored on this extra delivery?</DialogDescription>
+            <DialogDescription className="text-center text-xs text-muted-foreground">How many runs were scored on this extra delivery?</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-3 gap-3 py-4">
             {[0, 1, 2, 3, 4, 6].map((r) => (
-              <Button key={r} variant="outline" className="h-16 rounded-2xl font-black text-2xl" onClick={() => handleAction(r, selectedExtra!)}>{r}</Button>
+              <Button key={r} variant="outline" className="h-16 rounded-2xl font-black text-2xl active:scale-95" onClick={() => handleAction(r, selectedExtra!)}>{r}</Button>
             ))}
           </div>
         </DialogContent>
@@ -487,11 +522,11 @@ function ScoringContent() {
         <DialogContent className="rounded-3xl max-w-[95vw] overflow-hidden p-0">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle className="text-center font-black uppercase">Wicket Method</DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500">Select how the batsman got out.</DialogDescription>
+            <DialogDescription className="text-center text-xs text-muted-foreground">Select how the batsman got out.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 p-6 bg-white">
+          <div className="grid grid-cols-2 gap-3 p-6 bg-card">
             {['bowled', 'caught', 'lbw', 'runOut', 'stumped', 'retired'].map((w) => (
-              <Button key={w} variant="outline" className="h-14 rounded-2xl font-black uppercase text-[10px]" onClick={() => handleAction(0, undefined, w as WicketType)}>{w}</Button>
+              <Button key={w} variant="outline" className="h-14 rounded-2xl font-black uppercase text-[10px] active:scale-95" onClick={() => handleAction(0, undefined, w as WicketType)}>{w}</Button>
             ))}
           </div>
         </DialogContent>
@@ -502,7 +537,7 @@ function ScoringContent() {
           <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
           <DialogHeader>
             <DialogTitle className="text-center uppercase font-black">{match.status === 'completed' ? 'Match Over!' : 'Innings Over!'}</DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500">The current innings has come to an end.</DialogDescription>
+            <DialogDescription className="text-center text-xs text-muted-foreground">The current innings has come to an end.</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col gap-2">
             {match.currentInnings === 1 ? (
@@ -519,7 +554,7 @@ function ScoringContent() {
 
 export default function ScoringPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center font-black uppercase tracking-widest">Loading...</div>}>
+    <Suspense fallback={<div className="p-8 text-center font-black uppercase tracking-widest text-muted-foreground">Loading...</div>}>
       <ScoringContent />
     </Suspense>
   );
