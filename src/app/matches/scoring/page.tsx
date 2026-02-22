@@ -50,6 +50,10 @@ function ScoringContent() {
   const [copiedType, setCopiedType] = useState<'uid' | 'link' | null>(null);
   const [origin, setOrigin] = useState('');
 
+  // New state for runs on wicket
+  const [selectedWicketType, setSelectedWicketType] = useState<WicketType | null>(null);
+  const [wicketRuns, setWicketRuns] = useState<number>(0);
+
   useEffect(() => {
     setMounted(true);
     if (typeof window !== 'undefined') {
@@ -394,7 +398,7 @@ function ScoringContent() {
           <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-muted text-muted-foreground border-none ring-1 ring-border active:scale-95" onClick={() => { setSelectedExtra('legBye'); setIsExtraDialogOpen(true); }}>L.BYE</Button>
           <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-muted text-muted-foreground border-none ring-1 ring-border active:scale-95" onClick={() => { setSelectedExtra('bye'); setIsExtraDialogOpen(true); }}>BYE</Button>
           <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-blue-500/10 text-blue-600 border-none ring-1 ring-blue-500/20 active:scale-95" onClick={() => undoMatchAction(match.id)}>UNDO</Button>
-          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-destructive text-destructive-foreground border-none shadow-md hover:bg-destructive/90 active:scale-95" onClick={() => setIsWicketTypeDialogOpen(true)}>OUT!</Button>
+          <Button variant="outline" className="h-14 text-[10px] font-black rounded-2xl bg-destructive text-destructive-foreground border-none shadow-md hover:bg-destructive/90 active:scale-95" onClick={() => { setIsWicketTypeDialogOpen(true); setSelectedWicketType(null); setWicketRuns(0); }}>OUT!</Button>
         </div>
       </main>
 
@@ -522,12 +526,45 @@ function ScoringContent() {
         <DialogContent className="rounded-3xl max-w-[95vw] overflow-hidden p-0">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle className="text-center font-black uppercase">Wicket Method</DialogTitle>
-            <DialogDescription className="text-center text-xs text-muted-foreground">Select how the batsman got out.</DialogDescription>
+            <DialogDescription className="text-center text-xs text-muted-foreground">Select method and enter any completed runs.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 p-6 bg-card">
-            {['bowled', 'caught', 'lbw', 'runOut', 'stumped', 'retired'].map((w) => (
-              <Button key={w} variant="outline" className="h-14 rounded-2xl font-black uppercase text-[10px] active:scale-95" onClick={() => handleAction(0, undefined, w as WicketType)}>{w}</Button>
-            ))}
+          <div className="p-6 space-y-6 bg-card">
+            <div className="grid grid-cols-2 gap-3">
+              {['bowled', 'caught', 'lbw', 'runOut', 'stumped', 'retired'].map((w) => (
+                <Button 
+                  key={w} 
+                  variant={selectedWicketType === w ? "default" : "outline"} 
+                  className="h-14 rounded-2xl font-black uppercase text-[10px] active:scale-95" 
+                  onClick={() => setSelectedWicketType(w as WicketType)}
+                >
+                  {w}
+                </Button>
+              ))}
+            </div>
+            
+            <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">Runs completed on this ball</label>
+              <div className="flex gap-2">
+                <Input 
+                  type="number" 
+                  value={wicketRuns} 
+                  onChange={(e) => setWicketRuns(Number(e.target.value))}
+                  className="h-14 rounded-2xl border-border bg-muted/50 text-center font-black text-xl"
+                  placeholder="0"
+                />
+                <Button 
+                  className="h-14 w-14 rounded-2xl shrink-0" 
+                  disabled={!selectedWicketType}
+                  onClick={() => {
+                    handleAction(wicketRuns, undefined, selectedWicketType!);
+                    setSelectedWicketType(null);
+                    setWicketRuns(0);
+                  }}
+                >
+                  <Check className="w-6 h-6" />
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
