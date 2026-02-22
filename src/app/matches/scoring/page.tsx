@@ -232,6 +232,17 @@ function ScoringContent() {
     setIsWicketTypeDialogOpen(false);
   };
 
+  const handleSwapStrike = () => {
+    if (!match || match.status === 'completed') return;
+    const newMatch: Match = JSON.parse(JSON.stringify(match));
+    const temp = newMatch.currentStrikerId;
+    newMatch.currentStrikerId = newMatch.currentNonStrikerId;
+    newMatch.currentNonStrikerId = temp;
+    updateMatch(newMatch, false);
+    syncToFirestore(newMatch);
+    toast({ title: "Strike Swapped", description: "Striker role manually changed." });
+  };
+
   const handleSelectBowler = (bowlerId: string) => {
     const newMatch: Match = JSON.parse(JSON.stringify(match));
     newMatch.currentBowlerId = bowlerId;
@@ -328,7 +339,7 @@ function ScoringContent() {
           </div>
           
           <CardContent className="p-4 space-y-4">
-            <div className="space-y-3">
+            <div className="relative space-y-3">
               {[striker, nonStriker].map((p, idx) => (
                 <div 
                   key={p?.id || idx} 
@@ -358,6 +369,19 @@ function ScoringContent() {
                   </div>
                 </div>
               ))}
+
+              {/* Manual Swap Strike Button */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="rounded-full w-8 h-8 bg-background shadow-md border-primary/20 hover:bg-primary/5 hover:border-primary active:scale-90 transition-all group"
+                  onClick={handleSwapStrike}
+                  title="Swap Strike"
+                >
+                  <RefreshCcw className="w-3.5 h-3.5 text-primary group-hover:rotate-180 transition-transform duration-500" />
+                </Button>
+              </div>
             </div>
 
             <Separator className="bg-border/50" />
