@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ import {
   ArrowRight,
   Download,
   Smartphone,
+  Share2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -152,6 +154,25 @@ export default function HomePage() {
     }
   };
 
+  const handleShareApp = async () => {
+    const shareData = {
+      title: 'CricNinja',
+      text: 'Track every ball and share live scores with CricNinja - The pro scoring app for local cricket!',
+      url: 'https://cricninja.vercel.app/',
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        toast({ title: "Link Copied!", description: "App URL saved to clipboard." });
+      }
+    } catch (err) {
+      // Silent fail for user cancel
+    }
+  };
+
   if (!mounted || !isHydrated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -235,20 +256,35 @@ export default function HomePage() {
           </Dialog>
         </section>
 
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <Link href="/matches/create">
-            <Card className="bg-primary text-primary-foreground border-none relative group active:scale-[0.98] transition-all shadow-xl shadow-primary/20 rounded-3xl overflow-hidden">
-              <CardContent className="p-8 relative z-10 flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-2xl font-black tracking-tight uppercase">New Match</h3>
-                  <p className="text-xs opacity-90 font-medium">Create a new live scorecard</p>
-                </div>
-                <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+            <Card className="bg-primary text-primary-foreground border-none relative group active:scale-[0.98] transition-all shadow-xl shadow-primary/20 rounded-3xl overflow-hidden h-full">
+              <CardContent className="p-6 relative z-10 flex flex-col justify-between h-full">
+                <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm w-fit mb-4">
                   <PlusCircle className="h-6 w-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black tracking-tight uppercase">New Match</h3>
+                  <p className="text-[10px] opacity-90 font-medium">Start scoring</p>
                 </div>
               </CardContent>
             </Card>
           </Link>
+
+          <Card 
+            className="bg-secondary text-secondary-foreground border-none relative group active:scale-[0.98] transition-all shadow-xl shadow-secondary/20 rounded-3xl overflow-hidden h-full cursor-pointer"
+            onClick={handleShareApp}
+          >
+            <CardContent className="p-6 relative z-10 flex flex-col justify-between h-full">
+              <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm w-fit mb-4">
+                <Share2 className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-black tracking-tight uppercase">Share App</h3>
+                <p className="text-[10px] opacity-90 font-medium">Invite others</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <BannerAd />
