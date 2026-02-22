@@ -146,7 +146,7 @@ function LiveContent() {
     : 0;
 
   const getBallDisplay = (ball: BallRecord) => {
-    if (ball.isWicket) return 'W';
+    if (ball.isWicket) return ball.runs > 0 ? `${ball.runs}W` : 'W';
     if (ball.extraType === 'wide') return `WD`;
     if (ball.extraType === 'noBall') return `NB`;
     if (ball.extraType === 'bye') return `${ball.runs}B`;
