@@ -362,7 +362,7 @@ export default function HomePage() {
               No recent matches
             </p>
             <p className="text-[10px] text-muted-foreground/60 mt-1 uppercase font-bold">
-              Start scoring a new game to see it here
+              Start scoring a new game to see it here.
             </p>
           </div>
         )}
