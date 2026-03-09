@@ -14,7 +14,6 @@ import {
   Copy,
   Check,
   RefreshCcw,
-  UserCog,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,6 +44,9 @@ function ScoringContent() {
   const [isEndInningsDialogOpen, setIsEndInningsDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [isReplaceBatsmanDialogOpen, setIsReplaceBatsmanDialogOpen] = useState(false);
+  
+  const [replacingRole, setReplacingRole] = useState<'striker' | 'nonStriker' | null>(null);
   const [playerToRename, setPlayerToRename] = useState<{ team: 'A' | 'B', id: string, name: string } | null>(null);
   const [newName, setNewName] = useState('');
   
@@ -269,7 +271,6 @@ function ScoringContent() {
 
     newMatch.currentBowlerId = bowlerId;
     
-    // Correct stats if we are mid-over and correcting a mistake
     const innings = newMatch.currentInnings === 1 ? newMatch.innings1 : newMatch.innings2;
     const currentBowlingTeam = newMatch.teamA.id === innings.battingTeamId ? newMatch.teamB : newMatch.teamA;
     
@@ -283,7 +284,6 @@ function ScoringContent() {
         lastOver.bowlerId = bowlerId;
         lastOver.balls.forEach(ball => {
           if (ball.bowlerId === oldBowlerId) {
-            // Revert from old mistakenly selected bowler
             if (oldBowler) {
               const ballRuns = (ball.extraType === 'bye' || ball.extraType === 'legBye') ? 0 : (ball.runs + (ball.extraType === 'wide' || ball.extraType === 'noBall' ? 1 : 0));
               oldBowler.runsConceded = Math.max(0, (oldBowler.runsConceded || 0) - ballRuns);
@@ -293,8 +293,6 @@ function ScoringContent() {
                 oldBowler.oversBowled = Math.max(0, Math.floor(totalBalls / 6) + (totalBalls % 6) / 10);
               }
             }
-            
-            // Add to the correct new bowler
             if (newBowler) {
               const ballRuns = (ball.extraType === 'bye' || ball.extraType === 'legBye') ? 0 : (ball.runs + (ball.extraType === 'wide' || ball.extraType === 'noBall' ? 1 : 0));
               newBowler.runsConceded = (newBowler.runsConceded || 0) + ballRuns;
@@ -304,7 +302,6 @@ function ScoringContent() {
                 newBowler.oversBowled = Math.floor(totalBalls / 6) + (totalBalls % 6) / 10;
               }
             }
-            
             ball.bowlerId = bowlerId;
           }
         });
@@ -317,6 +314,21 @@ function ScoringContent() {
     syncToFirestore(newMatch);
     setIsBowlerDialogOpen(false);
     toast({ title: "Bowler Updated", description: `Assigned to ${currentBowlingTeam.players.find(p => p.id === bowlerId)?.name}` });
+  };
+
+  const handleReplaceBatsman = (newPlayerId: string) => {
+    if (!match || !replacingRole) return;
+    const newMatch: Match = JSON.parse(JSON.stringify(match));
+    if (replacingRole === 'striker') {
+      newMatch.currentStrikerId = newPlayerId;
+    } else {
+      newMatch.currentNonStrikerId = newPlayerId;
+    }
+    updateMatch(newMatch, false);
+    syncToFirestore(newMatch);
+    setIsReplaceBatsmanDialogOpen(false);
+    setReplacingRole(null);
+    toast({ title: "Batsman Changed", description: "Successfully updated lineup." });
   };
 
   const handleSelectNextBatsman = (playerId: string) => {
@@ -408,12 +420,15 @@ function ScoringContent() {
           
           <CardContent className="p-4 space-y-4">
             <div className="relative space-y-3">
-              {[striker, nonStriker].map((p, idx) => (
+              {[
+                { p: striker, role: 'striker' as const },
+                { p: nonStriker, role: 'nonStriker' as const }
+              ].map(({ p, role }, idx) => (
                 <div 
                   key={p?.id || idx} 
                   className={`flex justify-between items-center py-2 px-3 rounded-xl transition-colors ${idx === 0 ? 'bg-primary/5 border border-primary/10' : ''}`}
                   onDoubleClick={() => {
-                    if (isOwner && p) {
+                    if (isOwner && p && p.runs === 0 && p.balls === 0) {
                       setPlayerToRename({ team: match.currentInnings === 1 ? 'A' : 'B', id: p.id, name: p.name });
                       setNewName(p.name);
                       setIsRenameDialogOpen(true);
@@ -425,6 +440,19 @@ function ScoringContent() {
                     <span className={`font-bold truncate ${idx === 0 ? 'text-primary' : 'text-muted-foreground'}`}>
                       {p?.name || '---'}
                     </span>
+                    {isOwner && p && p.runs === 0 && p.balls === 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 px-2 text-[9px] font-black uppercase bg-primary/10 hover:bg-primary/20 text-primary rounded-lg ml-2"
+                        onClick={() => {
+                          setReplacingRole(role);
+                          setIsReplaceBatsmanDialogOpen(true);
+                        }}
+                      >
+                        Change
+                      </Button>
+                    )}
                   </div>
                   <div className="text-right flex items-center gap-4">
                     <div className="flex flex-col items-end">
@@ -457,7 +485,7 @@ function ScoringContent() {
               className={`bg-secondary/5 rounded-xl p-3 border border-secondary/10 flex justify-between items-center transition-colors ${!bowler ? 'cursor-pointer animate-pulse border-secondary/30' : ''}`}
               onClick={() => { if (!bowler) setIsBowlerDialogOpen(true); }}
               onDoubleClick={() => {
-                if (isOwner && bowler) {
+                if (isOwner && bowler && bowler.oversBowled === 0) {
                   setPlayerToRename({ team: match.currentInnings === 1 ? 'B' : 'A', id: bowler.id, name: bowler.name });
                   setNewName(bowler.name);
                   setIsRenameDialogOpen(true);
@@ -540,6 +568,35 @@ function ScoringContent() {
             <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Enter name" className="h-12 rounded-2xl bg-muted/50 border-none font-bold" />
           </div>
           <DialogFooter><Button className="w-full h-12 rounded-2xl font-black uppercase" onClick={handleRenamePlayer}>Update Name</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isReplaceBatsmanDialogOpen} onOpenChange={setIsReplaceBatsmanDialogOpen}>
+        <DialogContent className="rounded-3xl max-w-[90vw]">
+          <DialogHeader>
+            <DialogTitle className="text-center font-black uppercase tracking-tight">Replace {replacingRole}</DialogTitle>
+            <DialogDescription className="text-center text-xs text-muted-foreground">Select a player from the squad to start in this role.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-2 py-4 max-h-[60vh] overflow-y-auto">
+            {battingTeam.players
+              .filter(p => !p.isOut && p.id !== match.currentStrikerId && p.id !== match.currentNonStrikerId)
+              .map((p) => (
+                <Button 
+                  key={p.id} 
+                  variant="outline" 
+                  className="h-14 rounded-2xl font-black flex justify-between px-4 active:scale-95"
+                  onClick={() => handleReplaceBatsman(p.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <User className="w-4 h-4 opacity-40" />
+                    <span>{p.name}</span>
+                  </div>
+                </Button>
+              ))}
+            {battingTeam.players.filter(p => !p.isOut && p.id !== match.currentStrikerId && p.id !== match.currentNonStrikerId).length === 0 && (
+              <p className="text-center text-xs text-muted-foreground py-4 italic">No other players available in squad.</p>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
