@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -13,6 +14,7 @@ import {
   Copy,
   Check,
   RefreshCcw,
+  UserCog,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,7 +52,6 @@ function ScoringContent() {
   const [copiedType, setCopiedType] = useState<'uid' | 'link' | null>(null);
   const [origin, setOrigin] = useState('');
 
-  // New state for runs on wicket
   const [selectedWicketType, setSelectedWicketType] = useState<WicketType | null>(null);
   const [wicketRuns, setWicketRuns] = useState<number>(0);
 
@@ -257,11 +258,65 @@ function ScoringContent() {
   };
 
   const handleSelectBowler = (bowlerId: string) => {
+    if (!match) return;
     const newMatch: Match = JSON.parse(JSON.stringify(match));
+    const oldBowlerId = newMatch.currentBowlerId;
+    
+    if (oldBowlerId === bowlerId) {
+      setIsBowlerDialogOpen(false);
+      return;
+    }
+
     newMatch.currentBowlerId = bowlerId;
+    
+    // Correct stats if we are mid-over and correcting a mistake
+    const innings = newMatch.currentInnings === 1 ? newMatch.innings1 : newMatch.innings2;
+    const currentBowlingTeam = newMatch.teamA.id === innings.battingTeamId ? newMatch.teamB : newMatch.teamA;
+    
+    if (innings.overs && innings.overs.length > 0) {
+      const lastOver = innings.overs[innings.overs.length - 1];
+      
+      if (lastOver.balls.length > 0) {
+        const oldBowler = currentBowlingTeam.players.find(p => p.id === oldBowlerId);
+        const newBowler = currentBowlingTeam.players.find(p => p.id === bowlerId);
+        
+        lastOver.bowlerId = bowlerId;
+        lastOver.balls.forEach(ball => {
+          if (ball.bowlerId === oldBowlerId) {
+            // Revert from old mistakenly selected bowler
+            if (oldBowler) {
+              const ballRuns = (ball.extraType === 'bye' || ball.extraType === 'legBye') ? 0 : (ball.runs + (ball.extraType === 'wide' || ball.extraType === 'noBall' ? 1 : 0));
+              oldBowler.runsConceded = Math.max(0, (oldBowler.runsConceded || 0) - ballRuns);
+              if (ball.isWicket && !['runOut'].includes(ball.wicketType!)) oldBowler.wickets = Math.max(0, (oldBowler.wickets || 0) - 1);
+              if (!ball.extraType || ball.extraType === 'bye' || ball.extraType === 'legBye') {
+                const totalBalls = Math.floor(oldBowler.oversBowled || 0) * 6 + Math.round(((oldBowler.oversBowled || 0) % 1) * 10) - 1;
+                oldBowler.oversBowled = Math.max(0, Math.floor(totalBalls / 6) + (totalBalls % 6) / 10);
+              }
+            }
+            
+            // Add to the correct new bowler
+            if (newBowler) {
+              const ballRuns = (ball.extraType === 'bye' || ball.extraType === 'legBye') ? 0 : (ball.runs + (ball.extraType === 'wide' || ball.extraType === 'noBall' ? 1 : 0));
+              newBowler.runsConceded = (newBowler.runsConceded || 0) + ballRuns;
+              if (ball.isWicket && !['runOut'].includes(ball.wicketType!)) newBowler.wickets = (newBowler.wickets || 0) + 1;
+              if (!ball.extraType || ball.extraType === 'bye' || ball.extraType === 'legBye') {
+                const totalBalls = Math.floor(newBowler.oversBowled || 0) * 6 + Math.round(((newBowler.oversBowled || 0) % 1) * 10) + 1;
+                newBowler.oversBowled = Math.floor(totalBalls / 6) + (totalBalls % 6) / 10;
+              }
+            }
+            
+            ball.bowlerId = bowlerId;
+          }
+        });
+      } else {
+        lastOver.bowlerId = bowlerId;
+      }
+    }
+
     updateMatch(newMatch, false);
     syncToFirestore(newMatch);
     setIsBowlerDialogOpen(false);
+    toast({ title: "Bowler Updated", description: `Assigned to ${currentBowlingTeam.players.find(p => p.id === bowlerId)?.name}` });
   };
 
   const handleSelectNextBatsman = (playerId: string) => {
@@ -399,7 +454,8 @@ function ScoringContent() {
             <Separator className="bg-border/50" />
 
             <div 
-              className={`bg-secondary/5 rounded-xl p-3 border border-secondary/10 flex justify-between items-center transition-colors`}
+              className={`bg-secondary/5 rounded-xl p-3 border border-secondary/10 flex justify-between items-center transition-colors ${!bowler ? 'cursor-pointer animate-pulse border-secondary/30' : ''}`}
+              onClick={() => { if (!bowler) setIsBowlerDialogOpen(true); }}
               onDoubleClick={() => {
                 if (isOwner && bowler) {
                   setPlayerToRename({ team: match.currentInnings === 1 ? 'B' : 'A', id: bowler.id, name: bowler.name });
@@ -411,6 +467,19 @@ function ScoringContent() {
               <div className="flex items-center gap-2 overflow-hidden flex-1">
                 <div className={`w-2 h-2 rounded-full ${bowler ? 'bg-secondary' : 'bg-transparent'}`} />
                 <span className="font-bold text-secondary truncate">{bowler?.name || 'SELECT BOWLER'}</span>
+                {isOwner && bowler && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 px-2 text-[9px] font-black uppercase bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-lg ml-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsBowlerDialogOpen(true);
+                    }}
+                  >
+                    Change
+                  </Button>
+                )}
               </div>
               <div className="text-right flex items-center gap-4">
                 <div className="flex flex-col items-end">
