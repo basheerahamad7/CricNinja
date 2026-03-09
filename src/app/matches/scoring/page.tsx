@@ -133,6 +133,19 @@ function ScoringContent() {
     ? (runsNeeded / (ballsRemaining / 6))
     : 0;
 
+  const lastOver = currentInnings.overs && currentInnings.overs.length > 0 
+    ? currentInnings.overs[currentInnings.overs.length - 1] 
+    : null;
+
+  const getBallDisplay = (ball: BallRecord) => {
+    if (ball.isWicket) return ball.runs > 0 ? `${ball.runs}W` : 'W';
+    if (ball.extraType === 'wide') return `WD`;
+    if (ball.extraType === 'noBall') return `NB`;
+    if (ball.extraType === 'bye') return `${ball.runs}B`;
+    if (ball.extraType === 'legBye') return `${ball.runs}LB`;
+    return ball.runs.toString();
+  };
+
   const handleAction = (runs: number, extraType?: ExtraType, wicketType?: WicketType) => {
     if (match.status === 'completed') return;
     if (!match.currentBowlerId) {
@@ -370,7 +383,6 @@ function ScoringContent() {
                 </div>
               ))}
 
-              {/* Manual Swap Strike Button */}
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
                 <Button 
                   variant="outline" 
@@ -409,6 +421,21 @@ function ScoringContent() {
                   Overs<br/><span className="text-foreground">{Math.floor(bowler?.oversBowled || 0)}.{Math.round(((bowler?.oversBowled || 0) % 1) * 10)}</span>
                 </div>
               </div>
+            </div>
+
+            <Separator className="bg-border/30" />
+
+            <div>
+               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">THIS OVER</p>
+               <div className="flex gap-2 flex-wrap">
+                {lastOver ? lastOver.balls.map((ball, i) => (
+                  <div key={i} className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black border transition-all tabular-nums ${ball.isWicket ? 'bg-destructive text-destructive-foreground border-destructive/20' : 'bg-muted text-foreground border-border'}`}>
+                    {getBallDisplay(ball)}
+                  </div>
+                )) : (
+                  <span className="text-xs text-muted-foreground/40 italic font-medium">Ready for first ball...</span>
+                )}
+               </div>
             </div>
           </CardContent>
         </Card>
