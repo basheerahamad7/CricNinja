@@ -1,5 +1,2 @@
-.next/
-.firebase/
-node_modules/
-.vercel/
-.env/
+.env
+node_modules
