@@ -35,11 +35,13 @@ export default function LiveClient() {
   useEffect(() => {
     if (!mounted || !rtdb || !id) return;
 
+    console.log("Attempting to fetch match with ID:", id);
     const matchId = Array.isArray(id) ? id[0] : id;
     const matchRef = ref(rtdb, `matches/${matchId}`);
     
     const unsubscribe = onValue(matchRef, (snapshot) => {
       const data = snapshot.val();
+      console.log("Match data from RTDB:", data);
       setMatch(data);
       setIsLoading(false);
     }, (error) => {
@@ -69,7 +71,7 @@ export default function LiveClient() {
         <Trophy className="w-16 h-16 text-muted-foreground/20 mb-4" />
         <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Match Not Found</h2>
         <p className="text-muted-foreground text-xs font-bold uppercase mt-2">This match may have ended or the link is invalid.</p>
-        <Button className="mt-8 rounded-2xl px-8 h-12 font-black uppercase tracking-widest shadow-lg" onClick={() => router.push('/')}>Go Home</Button>
+        <Button className="mt-8 rounded-2xl px-8 h-12 font-black uppercase tracking-widest shadow-lg" onClick={() => router.push('/')">Go Home</Button>
       </div>
     );
   }

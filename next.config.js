@@ -1,7 +1,5 @@
-
-import type {NextConfig} from 'next';
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   // Removed output: 'export' to support dynamic routing without generateStaticParams
   images: {
     unoptimized: true,
@@ -64,4 +62,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
