@@ -35,21 +35,25 @@ export default function LiveClient() {
   useEffect(() => {
     if (!mounted || !rtdb || !id) return;
 
-    console.log("Attempting to fetch match with ID:", id);
     const matchId = Array.isArray(id) ? id[0] : id;
     const matchRef = ref(rtdb, `matches/${matchId}`);
     
-    const unsubscribe = onValue(matchRef, (snapshot) => {
-      const data = snapshot.val();
-      console.log("Match data from RTDB:", data);
-      setMatch(data);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("RTDB Error:", error);
-      setIsLoading(false);
-    });
+    const unsubscribe = onValue(
+      matchRef, 
+      (snapshot) => {
+        const data = snapshot.val();
+        setMatch(data);
+        setIsLoading(false);
+      }, 
+      (error) => {
+        console.error("RTDB Error:", error);
+        setIsLoading(false);
+      }
+    );
 
-    return () => off(matchRef, 'value', unsubscribe);
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [mounted, id, rtdb]);
 
   if (!mounted) return null;
@@ -71,7 +75,7 @@ export default function LiveClient() {
         <Trophy className="w-16 h-16 text-muted-foreground/20 mb-4" />
         <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Match Not Found</h2>
         <p className="text-muted-foreground text-xs font-bold uppercase mt-2">This match may have ended or the link is invalid.</p>
-        <Button className="mt-8 rounded-2xl px-8 h-12 font-black uppercase tracking-widest shadow-lg" onClick={() => router.push('/')">Go Home</Button>
+        <Button className="mt-8 rounded-2xl px-8 h-12 font-black uppercase tracking-widest shadow-lg text-white" onClick={() => router.push('/')}>Go Home</Button>
       </div>
     );
   }
@@ -100,8 +104,8 @@ export default function LiveClient() {
 
   const getBallDisplay = (ball: BallRecord) => {
     if (ball.isWicket) return ball.runs > 0 ? `${ball.runs}W` : 'W';
-    if (ball.extraType === 'wide') return `WD`;
-    if (ball.extraType === 'noBall') return `NB`;
+    if (ball.extraType === 'wide') return 'WD';
+    if (ball.extraType === 'noBall') return 'NB';
     if (ball.extraType === 'bye') return `${ball.runs}B`;
     if (ball.extraType === 'legBye') return `${ball.runs}LB`;
     return ball.runs.toString();
@@ -158,163 +162,78 @@ export default function LiveClient() {
                     <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">RRR</span>
                     <span className="text-lg font-black">{rrr.toFixed(2)}</span>
                   </div>
-                  <Badge variant="secondary" className="ml-auto bg-primary-foreground/20 text-primary-foreground border-none font-black text-[10px] px-3 py-1">
-                    TARGET {target}
-                  </Badge>
+                  <Separator orientation="vertical" className="h-8 bg-primary-foreground/20" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">TARGET</span>
+                    <span className="text-lg font-black">{target}</span>
+                  </div>
                 </>
               )}
             </div>
+          </div>
 
-            {match.currentInnings === 2 && match.status === 'ongoing' && (
-              <div className="bg-primary-foreground/10 p-3 rounded-2xl border border-primary-foreground/10 text-center animate-pulse">
-                <p className="text-sm font-black uppercase tracking-tight">
-                  {runsNeeded <= 0 ? 'Target Reached!' : `Needs ${runsNeeded} runs from ${ballsRemaining} balls`}
+          <div className="p-6 space-y-6">
+            {match.status === 'completed' && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-2xl p-4 text-center">
+                <p className="font-headline font-black text-sm uppercase tracking-tight">Match Ended</p>
+                <p className="text-[10px] font-bold uppercase mt-0.5">
+                  {match.innings1.totalRuns > match.innings2.totalRuns 
+                    ? `${match.teamA.name} won by ${match.innings1.totalRuns - match.innings2.totalRuns} runs!` 
+                    : match.innings2.totalRuns > match.innings1.totalRuns 
+                    ? `${match.teamB.name} won by ${10 - match.innings2.totalWickets} wickets!` 
+                    : 'Match ended in a Tie!'}
                 </p>
               </div>
             )}
-          </div>
-          
-          <CardContent className="p-4 space-y-4">
+
             <div className="space-y-3">
-              {[striker, nonStriker].map((p, idx) => (
-                <div 
-                  key={p?.id || idx} 
-                  className={`flex justify-between items-center py-2 px-3 rounded-xl transition-colors ${idx === 0 ? 'bg-primary/5 border border-primary/10' : ''}`}
-                >
-                  <div className="flex items-center gap-2 overflow-hidden flex-1">
-                    <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-primary animate-pulse' : 'bg-transparent'}`} />
-                    <span className={`font-bold truncate ${idx === 0 ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {p?.name || '---'}
-                    </span>
-                  </div>
-                  <div className="text-right flex items-center gap-4">
-                    <div className="flex flex-col items-end">
-                      <span className="text-lg font-black leading-none text-foreground">{p?.runs || 0}<span className="text-xs font-bold text-muted-foreground/40 ml-1">({p?.balls || 0})</span></span>
-                      <span className="text-[9px] font-bold text-muted-foreground/60 uppercase mt-1">SR {p && p.balls > 0 ? ((p.runs / p.balls) * 100).toFixed(1) : "0.0"}</span>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Recent Balls</p>
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+                {lastBalls.length > 0 ? (
+                  lastBalls.map((ball, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
+                        ball.isWicket 
+                          ? 'bg-destructive text-destructive-foreground' 
+                          : ball.runs === 4 || ball.runs === 6 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted text-foreground'
+                      }`}
+                    >
+                      {getBallDisplay(ball)}
                     </div>
-                    <div className="text-[10px] font-bold text-muted-foreground/40 uppercase leading-tight border-l pl-3 border-border min-w-[35px]">
-                      4s: {p?.fours || 0}<br/>6s: {p?.sixes || 0}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Separator className="bg-border/50" />
-
-            <div className={`bg-secondary/5 rounded-xl p-3 border border-secondary/10 flex justify-between items-center transition-colors`}>
-              <div className="flex items-center gap-2 overflow-hidden flex-1">
-                <div className={`w-2 h-2 rounded-full ${bowler ? 'bg-secondary' : 'bg-transparent'}`} />
-                <span className="font-bold text-secondary truncate">{bowler?.name || '---'}</span>
-              </div>
-              <div className="text-right flex items-center gap-4">
-                <div className="flex flex-col items-end">
-                  <span className="text-lg font-black text-secondary leading-none">{bowler?.wickets || 0}<span className="text-xs font-bold text-muted-foreground/40 ml-1">-{bowler?.runsConceded || 0}</span></span>
-                  <span className="text-[9px] font-bold text-muted-foreground/60 uppercase mt-1">Econ {(bowler && bowler.oversBowled > 0 ? (bowler.runsConceded / (Math.floor(bowler.oversBowled) + (bowler.oversBowled % 1) * 10 / 6)).toFixed(2) : "0.00")}</span>
-                </div>
-                <div className="text-[10px] font-bold text-muted-foreground/40 border-l pl-3 border-border min-w-[40px]">
-                  Overs<br/><span className="text-foreground">{Math.floor(bowler?.oversBowled || 0)}.{Math.round(((bowler?.oversBowled || 0) % 1) * 10)}</span>
-                </div>
-              </div>
-            </div>
-
-            <Separator className="bg-border/30" />
-
-            <div>
-               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">THIS OVER</p>
-               <div className="flex gap-2 flex-wrap">
-                {lastBalls.length > 0 ? lastBalls.map((ball, i) => (
-                  <div key={i} className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black border transition-all tabular-nums ${ball.isWicket ? 'bg-destructive text-destructive-foreground border-destructive/20' : 'bg-muted text-foreground border-border'}`}>
-                    {getBallDisplay(ball)}
-                  </div>
-                )) : (
-                  <span className="text-xs text-muted-foreground/40 italic font-medium">No balls bowled yet</span>
+                  ))
+                ) : (
+                  <p className="text-xs text-muted-foreground font-medium">No balls bowled in this over yet.</p>
                 )}
-               </div>
+              </div>
             </div>
-          </CardContent>
+
+            <div className="space-y-4">
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Current Batter & Bowler</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="bg-muted/30 border-border p-4 rounded-2xl space-y-1">
+                  <span className="text-[9px] font-black uppercase text-primary tracking-widest">STRIKER</span>
+                  <p className="font-bold text-xs truncate">{striker?.name || 'Batsman'}</p>
+                  <p className="text-xs font-black text-foreground tabular-nums">
+                    {striker?.runs || 0} <span className="text-[10px] text-muted-foreground font-normal">({striker?.balls || 0})</span>
+                  </p>
+                </Card>
+                <Card className="bg-muted/30 border-border p-4 rounded-2xl space-y-1">
+                  <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">BOWLER</span>
+                  <p className="font-bold text-xs truncate">{bowler?.name || 'Bowler'}</p>
+                  <p className="text-xs font-black text-foreground tabular-nums">
+                    {bowler?.wickets || 0}/{bowler?.runsConceded || 0} <span className="text-[10px] text-muted-foreground font-normal">({bowler?.oversBowled || 0} ov)</span>
+                  </p>
+                </Card>
+              </div>
+            </div>
+          </div>
         </Card>
 
         <BannerAd />
-
-        <Tabs defaultValue="batting" className="w-full">
-           <TabsList className="grid w-full grid-cols-2 bg-muted/50 rounded-2xl p-1 mb-4">
-              <TabsTrigger value="batting" className="rounded-xl font-black uppercase text-[10px] tracking-widest">BATTING</TabsTrigger>
-              <TabsTrigger value="bowling" className="rounded-xl font-black uppercase text-[10px] tracking-widest">BOWLING</TabsTrigger>
-           </TabsList>
-           
-           <TabsContent value="batting">
-              <Card className="border-none shadow-sm rounded-3xl overflow-hidden ring-1 ring-border bg-card">
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow className="hover:bg-transparent border-border/50">
-                      <TableHead className="font-black text-[9px] uppercase tracking-widest">Batsman</TableHead>
-                      <TableHead className="text-center font-black text-[9px] uppercase">R</TableHead>
-                      <TableHead className="text-center font-black text-[9px] uppercase">B</TableHead>
-                      <TableHead className="text-center font-black text-[9px] uppercase">SR</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {battingTeam.players.map((p) => (
-                      <TableRow key={p.id} className="border-border/50 hover:bg-muted/20">
-                        <TableCell className="py-3">
-                          <p className="font-bold text-xs text-foreground">{p.name}</p>
-                          {p.isOut && <p className="text-[8px] text-destructive uppercase font-black tracking-tight">{p.howOut || "out"}</p>}
-                        </TableCell>
-                        <TableCell className="text-center font-black tabular-nums text-sm text-foreground">{p.runs}</TableCell>
-                        <TableCell className="text-center text-xs text-muted-foreground tabular-nums">{p.balls}</TableCell>
-                        <TableCell className="text-center text-[10px] font-mono text-muted-foreground/60 tabular-nums">{p.balls > 0 ? ((p.runs / p.balls) * 100).toFixed(1) : "0.0"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-           </TabsContent>
-
-           <TabsContent value="bowling">
-              <Card className="border-none shadow-sm rounded-3xl overflow-hidden ring-1 ring-border bg-card">
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow className="hover:bg-transparent border-border/50">
-                      <TableHead className="font-black text-[9px] uppercase tracking-widest">Bowler</TableHead>
-                      <TableHead className="text-center font-black text-[9px] uppercase">O</TableHead>
-                      <TableHead className="text-center font-black text-[9px] uppercase">W</TableHead>
-                      <TableHead className="text-center font-black text-[9px] uppercase">Econ</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {bowlingTeam.players.filter(p => p.oversBowled > 0).map((p) => (
-                      <TableRow key={p.id} className="border-border/50 hover:bg-muted/20">
-                        <TableCell className="py-3 font-bold text-xs text-foreground">{p.name}</TableCell>
-                        <TableCell className="text-center text-xs tabular-nums text-foreground">{Math.floor(p.oversBowled)}.{Math.round((p.oversBowled % 1) * 10)}</TableCell>
-                        <TableCell className="text-center font-black text-sm text-primary tabular-nums">{p.wickets}</TableCell>
-                        <TableCell className="text-center font-mono text-[10px] text-muted-foreground/60 tabular-nums">{(p.runsConceded / (Math.floor(p.oversBowled) + (p.oversBowled % 1) * 10 / 6) || 0).toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-           </TabsContent>
-        </Tabs>
       </main>
-
-      <footer className="fixed bottom-0 inset-x-0 bg-background/80 backdrop-blur-md border-t px-4 py-2 flex justify-around items-center safe-paddings shadow-lg">
-        <Button 
-          variant="ghost" 
-          className="flex flex-col items-center gap-1 h-auto py-1 text-[9px] font-black text-primary uppercase"
-        >
-          <Clock className="w-5 h-5" />
-          LIVE SCORE
-        </Button>
-        <Button 
-          variant="ghost" 
-          className="flex flex-col items-center gap-1 h-auto py-1 text-[9px] font-black text-muted-foreground/40 uppercase"
-          onClick={() => router.push('/')}
-        >
-          <LayoutGrid className="w-5 h-5" />
-          ALL MATCHES
-        </Button>
-      </footer>
     </div>
   );
 }
