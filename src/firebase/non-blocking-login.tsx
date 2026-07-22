@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   linkWithPopup,
   UserCredential,
 } from 'firebase/auth';
@@ -25,7 +26,7 @@ export function initiateEmailSignIn(authInstance: Auth, email: string, password:
   signInWithEmailAndPassword(authInstance, email, password);
 }
 
-/** Initiate Google sign-in with popup (links anonymous account if present). */
+/** Initiate Google sign-in with popup, falling back to redirect if popup is blocked. */
 export async function initiateGoogleSignIn(authInstance: Auth): Promise<UserCredential | undefined> {
   const provider = new GoogleAuthProvider();
   try {
@@ -39,7 +40,12 @@ export async function initiateGoogleSignIn(authInstance: Auth): Promise<UserCred
       }
     }
     return await signInWithPopup(authInstance, provider);
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/cancelled-popup-request') {
+      console.warn("Popup blocked by browser. Falling back to Google redirect sign-in...");
+      await signInWithRedirect(authInstance, provider);
+      return undefined;
+    }
     console.error("Google sign-in error:", error);
     throw error;
   }

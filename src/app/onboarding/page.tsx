@@ -203,12 +203,18 @@ export default function OnboardingPage() {
     setIsSaving(true);
     try {
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        onboardingStep: nextStep,
-        profileCompletion: nextCompletion,
-        updatedAt: serverTimestamp(),
-        ...extraData,
-      });
+      await setDoc(
+        userRef, 
+        {
+          uid: user.uid,
+          email: user.email || '',
+          onboardingStep: nextStep,
+          profileCompletion: nextCompletion,
+          updatedAt: serverTimestamp(),
+          ...extraData,
+        },
+        { merge: true }
+      );
       setStep(nextStep);
     } catch (err) {
       console.error('Error saving onboarding step:', err);
@@ -285,15 +291,23 @@ export default function OnboardingPage() {
 
     try {
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        profileCompleted: true,
-        onboardingStep: 9,
-        profileCompletion: 100,
-        'cricket.jerseyNumber': finalJersey,
-        'account.bio': finalBio,
-        'cricket.favoriteFormats': finalFormats,
-        updatedAt: serverTimestamp(),
-      });
+      await setDoc(
+        userRef, 
+        {
+          profileCompleted: true,
+          onboardingStep: 9,
+          profileCompletion: 100,
+          cricket: {
+            jerseyNumber: finalJersey,
+            favoriteFormats: finalFormats,
+          },
+          account: {
+            bio: finalBio,
+          },
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
       setStep(9);
     } catch (err) {
       console.error('Error completing onboarding:', err);
