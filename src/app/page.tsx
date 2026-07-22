@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -29,6 +28,8 @@ import { ModeToggle } from '@/components/mode-toggle';
 import { AuthButton } from '@/components/AuthButton';
 import { SignInModal } from '@/components/SignInModal';
 import { LeaderboardService, UserRankSummary } from '@/services/leaderboard';
+import { BottomNavigation } from '@/components/BottomNavigation';
+import { MatchRecoveryModal } from '@/components/MatchRecoveryModal';
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,7 @@ export default function HomePage() {
 
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [showSignInModal, setShowSignInModal] = useState(false);
+  const [recoveryMatch, setRecoveryMatch] = useState<Match | null>(null);
   const [signInModalText, setSignInModalText] = useState({
     title: 'Sign In Required',
     description: 'You must be signed in with Google to start or spectate matches.'
@@ -87,6 +89,14 @@ export default function HomePage() {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Recovery check for unfinished local matches
+    if (matches && matches.length > 0) {
+      const unfinished = matches.find((m) => m.status === 'ongoing');
+      if (unfinished) {
+        setRecoveryMatch(unfinished);
+      }
+    }
     
     if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
       setIsStandalone(true);
@@ -116,7 +126,7 @@ export default function HomePage() {
       unsub();
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-  }, []);
+  }, [matches]);
 
   useEffect(() => {
     async function loadRecentMatches() {
@@ -489,12 +499,25 @@ export default function HomePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <SignInModal 
         isOpen={showSignInModal} 
         onClose={() => setShowSignInModal(false)} 
         title={signInModalText.title}
         description={signInModalText.description}
       />
+
+      <MatchRecoveryModal
+        isOpen={!!recoveryMatch}
+        match={recoveryMatch}
+        onResume={() => {
+          if (recoveryMatch) router.push(`/matches/${recoveryMatch.id}/scoring`);
+          setRecoveryMatch(null);
+        }}
+        onDiscard={() => setRecoveryMatch(null)}
+      />
+
+      <BottomNavigation />
     </div>
   );
 }

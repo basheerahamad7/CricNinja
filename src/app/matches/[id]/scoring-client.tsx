@@ -22,6 +22,9 @@ import { useUser, setDocumentNonBlocking, useFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { AuthButton } from '@/components/AuthButton';
 import { ShieldAlert } from 'lucide-react';
+import { useOfflineSync, OfflineSyncService } from '@/lib/offline-sync';
+import { OfflineBanner } from '@/components/OfflineBanner';
+import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 
 export default function ScoringClient() {
   const { id } = useParams();
@@ -45,13 +48,19 @@ export default function ScoringClient() {
   const matchId = Array.isArray(id) ? id[0] : id;
   const match = useMemo(() => matches.find(m => m.id === matchId), [matches, matchId]);
 
+  const { isOnline, syncStatus, pendingCount, triggerSync } = useOfflineSync(db);
+
   useEffect(() => {
-    if (mounted && user && match && db) {
-      const matchRef = doc(db, 'matches', match.id);
-      const { history, ...sanitizedMatch } = JSON.parse(JSON.stringify(match));
-      setDocumentNonBlocking(matchRef, { ...sanitizedMatch, ownerId: user.uid }, { merge: true });
+    if (mounted && match) {
+      OfflineSyncService.saveLocalMatch(match, isOnline ? 'synced' : 'pending');
+
+      if (user && db && isOnline) {
+        const matchRef = doc(db, 'matches', match.id);
+        const { history, ...sanitizedMatch } = JSON.parse(JSON.stringify(match));
+        setDocumentNonBlocking(matchRef, { ...sanitizedMatch, ownerId: user.uid }, { merge: true });
+      }
     }
-  }, [match, user, mounted, db]);
+  }, [mounted, user, match, db, isOnline]);
 
   if (!mounted) return null;
 
@@ -201,15 +210,22 @@ export default function ScoringClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-body">
-      <header className="sticky top-0 z-50 bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm">
+    <div className="min-h-screen bg-background pb-24 font-body">
+      <OfflineBanner isOnline={isOnline} />
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center shadow-xs">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push('/')}><ArrowLeft className="w-5 h-5" /></Button>
-          <h2 className="font-black text-xs uppercase truncate max-w-[120px]">{battingTeam.name}</h2>
+          <div>
+            <h2 className="font-bold text-sm leading-none text-foreground truncate max-w-[120px]">{battingTeam.name}</h2>
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-[9px] text-muted-foreground uppercase font-semibold">VS {bowlingTeam.name}</span>
+            </div>
+          </div>
         </div>
-        <Badge variant="outline" className={`text-[10px] font-black uppercase ${match.status === 'ongoing' ? 'text-red-600 border-red-200' : ''}`}>
-          {match.status === 'ongoing' ? '🔴 LIVE' : 'FINISHED'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <SyncStatusIndicator status={syncStatus} pendingCount={pendingCount} onSyncClick={triggerSync} />
+          <Button variant="ghost" size="icon" onClick={handleShare}><Share2 className="w-5 h-5" /></Button>
+        </div>
       </header>
 
       <main className="max-w-xl mx-auto p-4 space-y-4">

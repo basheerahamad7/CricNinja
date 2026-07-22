@@ -101,10 +101,24 @@ export default function OnboardingPage() {
       if (userProfile.cricket?.jerseyNumber) setJerseyNumber(String(userProfile.cricket.jerseyNumber));
       if (userProfile.account?.bio) setBio(userProfile.account.bio);
       if (userProfile.cricket?.favoriteFormats) setFavoriteFormats(userProfile.cricket.favoriteFormats);
-    } else if (user) {
+    } else if (user && db) {
       setStep(3);
+      // Auto-sync Google Account metadata to Firestore
+      const userRef = doc(db, 'users', user.uid);
+      setDoc(
+        userRef,
+        {
+          uid: user.uid,
+          email: user.email || '',
+          account: {
+            displayName: user.displayName || 'Cricket Player',
+            photoURL: user.photoURL || '',
+          },
+        },
+        { merge: true }
+      );
     }
-  }, [user, userProfile, router]);
+  }, [user, userProfile, db, router]);
 
   // Generate Username Suggestions when arriving at Step 7
   useEffect(() => {
@@ -325,9 +339,17 @@ export default function OnboardingPage() {
     }
   };
 
+  const getDisplayName = () => {
+    return user?.displayName || userProfile?.account?.displayName || 'Cricket Player';
+  };
+
+  const getPhotoURL = () => {
+    return user?.photoURL || userProfile?.account?.photoURL || '';
+  };
+
   const getFirstName = () => {
-    if (!user?.displayName) return 'Player';
-    return user.displayName.split(' ')[0];
+    const name = getDisplayName();
+    return name.split(' ')[0];
   };
 
   const currentCountryName = COUNTRIES.find(c => c.id === countryId)?.name || 'India';
@@ -413,8 +435,8 @@ export default function OnboardingPage() {
           <Card className="bg-muted/40 border-primary/20 rounded-3xl p-6 space-y-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary shrink-0">
-                {user?.photoURL ? (
-                  <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                {getPhotoURL() ? (
+                  <img src={getPhotoURL()} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                     {getFirstName()[0]}
@@ -422,7 +444,7 @@ export default function OnboardingPage() {
                 )}
               </div>
               <div className="space-y-0.5">
-                <p className="font-bold text-foreground">{user?.displayName}</p>
+                <p className="font-bold text-foreground">{getDisplayName()}</p>
                 <p className="text-xs text-muted-foreground font-medium">{user?.email}</p>
               </div>
             </div>
@@ -887,8 +909,8 @@ export default function OnboardingPage() {
           <Card className="bg-card border-primary/20 shadow-2xl rounded-3xl p-6 space-y-5 text-left relative overflow-hidden">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary shrink-0 shadow-md">
-                {user?.photoURL ? (
-                  <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                {getPhotoURL() ? (
+                  <img src={getPhotoURL()} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                     {getFirstName()[0]}
@@ -897,7 +919,7 @@ export default function OnboardingPage() {
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-black text-base uppercase tracking-tight">{user?.displayName}</h3>
+                  <h3 className="font-black text-base uppercase tracking-tight">{getDisplayName()}</h3>
                   {jerseyNumber && (
                     <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black">
                       #{jerseyNumber}

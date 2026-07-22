@@ -2,13 +2,14 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Trophy, Shield } from 'lucide-react';
+import { ArrowLeft, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Leaderboard } from '@/components/Leaderboard';
+import { BottomNavigation } from '@/components/BottomNavigation';
 
 export default function LeaderboardPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 max-w-lg mx-auto space-y-6 pb-12 select-none">
+    <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 max-w-lg mx-auto space-y-6 pb-24 select-none">
       
       {/* Header */}
       <header className="flex items-center justify-between pt-2">
@@ -30,6 +31,9 @@ export default function LeaderboardPage() {
 
       {/* Main Leaderboard Component */}
       <Leaderboard />
+
+      {/* Bottom Navigation */}
+      <BottomNavigation />
     </div>
   );
 }

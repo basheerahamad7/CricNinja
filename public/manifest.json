@@ -1,0 +1,24 @@
+{
+  "name": "CricNinja - Live Cricket Scoring & Pro Stats",
+  "short_name": "CricNinja",
+  "description": "Track every ball, share live scores, and manage your local cricket team like a pro with CricNinja.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#4285F4",
+  "theme_color": "#4285F4",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏏%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏏%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
