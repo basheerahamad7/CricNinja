@@ -1,12 +1,12 @@
-
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore } from 'firebase/firestore';
+import { Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { Database } from 'firebase/database';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { CricNinjaUser } from '@/types/user';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -20,6 +20,8 @@ interface UserAuthState {
   user: User | null;
   isUserLoading: boolean;
   userError: Error | null;
+  userProfile: CricNinjaUser | null;
+  isProfileLoading: boolean;
 }
 
 export interface FirebaseContextState {
@@ -31,6 +33,8 @@ export interface FirebaseContextState {
   user: User | null;
   isUserLoading: boolean;
   userError: Error | null;
+  userProfile: CricNinjaUser | null;
+  isProfileLoading: boolean;
 }
 
 export interface FirebaseServicesAndUser {
@@ -41,12 +45,16 @@ export interface FirebaseServicesAndUser {
   user: User | null;
   isUserLoading: boolean;
   userError: Error | null;
+  userProfile: CricNinjaUser | null;
+  isProfileLoading: boolean;
 }
 
 export interface UserHookResult {
   user: User | null;
   isUserLoading: boolean;
   userError: Error | null;
+  userProfile: CricNinjaUser | null;
+  isProfileLoading: boolean;
 }
 
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
@@ -62,28 +70,103 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     user: null,
     isUserLoading: true,
     userError: null,
+    userProfile: null,
+    isProfileLoading: true,
   });
 
   useEffect(() => {
     if (!auth) {
-      setUserAuthState({ user: null, isUserLoading: false, userError: new Error("Auth service not provided.") });
+      setUserAuthState({ 
+        user: null, 
+        isUserLoading: false, 
+        userError: new Error("Auth service not provided."),
+        userProfile: null,
+        isProfileLoading: false,
+      });
       return;
     }
 
-    setUserAuthState({ user: null, isUserLoading: true, userError: null });
+    setUserAuthState(prev => ({ ...prev, isUserLoading: true }));
+
+    let profileUnsubscribe: (() => void) | null = null;
 
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser) => {
-        setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
+        if (profileUnsubscribe) {
+          profileUnsubscribe();
+          profileUnsubscribe = null;
+        }
+
+        if (firebaseUser && firestore) {
+          setUserAuthState({ 
+            user: firebaseUser, 
+            isUserLoading: false, 
+            userError: null, 
+            userProfile: null, 
+            isProfileLoading: true 
+          });
+
+          const userDocRef = doc(firestore, 'users', firebaseUser.uid);
+          profileUnsubscribe = onSnapshot(
+            userDocRef,
+            (docSnap) => {
+              if (docSnap.exists()) {
+                setUserAuthState({
+                  user: firebaseUser,
+                  isUserLoading: false,
+                  userError: null,
+                  userProfile: docSnap.data() as CricNinjaUser,
+                  isProfileLoading: false,
+                });
+              } else {
+                setUserAuthState({
+                  user: firebaseUser,
+                  isUserLoading: false,
+                  userError: null,
+                  userProfile: null,
+                  isProfileLoading: false,
+                });
+              }
+            },
+            (err) => {
+              console.error("FirebaseProvider: user profile snapshot error:", err);
+              setUserAuthState({
+                user: firebaseUser,
+                isUserLoading: false,
+                userError: null,
+                userProfile: null,
+                isProfileLoading: false,
+              });
+            }
+          );
+        } else {
+          setUserAuthState({ 
+            user: null, 
+            isUserLoading: false, 
+            userError: null, 
+            userProfile: null, 
+            isProfileLoading: false 
+          });
+        }
       },
       (error) => {
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
-        setUserAuthState({ user: null, isUserLoading: false, userError: error });
+        setUserAuthState({ 
+          user: null, 
+          isUserLoading: false, 
+          userError: error, 
+          userProfile: null, 
+          isProfileLoading: false 
+        });
       }
     );
-    return () => unsubscribe();
-  }, [auth]);
+
+    return () => {
+      unsubscribe();
+      if (profileUnsubscribe) profileUnsubscribe();
+    };
+  }, [auth, firestore]);
 
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth && database);
@@ -96,6 +179,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       user: userAuthState.user,
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
+      userProfile: userAuthState.userProfile,
+      isProfileLoading: userAuthState.isProfileLoading,
     };
   }, [firebaseApp, firestore, auth, database, userAuthState]);
 
@@ -126,6 +211,8 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     user: context.user,
     isUserLoading: context.isUserLoading,
     userError: context.userError,
+    userProfile: context.userProfile,
+    isProfileLoading: context.isProfileLoading,
   };
 };
 
@@ -139,28 +226,7 @@ export const useFirestore = (): Firestore => {
   return firestore;
 };
 
-export const useDatabase = (): Database => {
-  const { database } = useFirebase();
-  return database;
-};
-
-export const useFirebaseApp = (): FirebaseApp => {
-  const { firebaseApp } = useFirebase();
-  return firebaseApp;
-};
-
-type MemoFirebase <T> = T & {__memo?: boolean};
-
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
-  const memoized = useMemo(factory, deps);
-  
-  if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
-  
-  return memoized;
-}
-
 export const useUser = (): UserHookResult => {
-  const { user, isUserLoading, userError } = useFirebase();
-  return { user, isUserLoading, userError };
+  const { user, isUserLoading, userError, userProfile, isProfileLoading } = useFirebase();
+  return { user, isUserLoading, userError, userProfile, isProfileLoading };
 };

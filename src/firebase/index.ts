@@ -1,7 +1,7 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 
 /**
@@ -29,10 +29,24 @@ export function initializeFirebase() {
  * Gets SDK instances for a given Firebase App.
  */
 export function getSdks(firebaseApp: FirebaseApp) {
+  let firestore;
+
+  if (typeof window !== 'undefined') {
+    try {
+      firestore = initializeFirestore(firebaseApp, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      });
+    } catch (e) {
+      firestore = getFirestore(firebaseApp);
+    }
+  } else {
+    firestore = getFirestore(firebaseApp);
+  }
+
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp),
+    firestore,
     database: getDatabase(firebaseApp, firebaseConfig.databaseURL)
   };
 }

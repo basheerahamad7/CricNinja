@@ -3,19 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import { ArrowLeft, UserPlus, Trash2, Trophy, Settings2, MapPin, Users, Edit2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, Trash2, Trophy, Settings2, MapPin, Users, Edit2, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMatchStore, Player, Match } from '@/lib/match-store';
-import { useUser, useAuth } from '@/firebase';
-import { signInAnonymously } from 'firebase/auth';
+import { useUser } from '@/firebase';
+import { AuthButton } from '@/components/AuthButton';
 
 export default function CreateMatchPage() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
   const { addMatch } = useMatchStore();
   const [mounted, setMounted] = useState(false);
 
@@ -23,11 +22,29 @@ export default function CreateMatchPage() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (mounted && !isUserLoading && !user) {
-      signInAnonymously(auth).catch(() => {});
-    }
-  }, [user, isUserLoading, auth, mounted]);
+  if (mounted && !isUserLoading && (!user || user.isAnonymous)) {
+    return (
+      <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center font-body">
+        <Card className="max-w-md w-full rounded-3xl p-6 text-center space-y-6 shadow-lg border-primary/20">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-headline font-black tracking-tight text-foreground">Sign In Required</h2>
+            <p className="text-sm text-muted-foreground">
+              Only verified users can create new matches and manage scorecards. Please sign in to continue.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col items-center gap-4">
+            <AuthButton />
+            <Button variant="ghost" size="sm" onClick={() => router.push('/')} className="rounded-full text-xs font-bold">
+              Back to Home
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   const [teamAName, setTeamAName] = useState('Team A');
   const [teamBName, setTeamBName] = useState('Team B');

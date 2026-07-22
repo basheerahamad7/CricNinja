@@ -6,7 +6,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
 
-const cricketBatIcon = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏏</text></svg>`;
+const cricketBatIcon = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏏%3C/text%3E%3C/svg%3E`;
 const shareImage = 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?q=80&w=1200&h=630&auto=format&fit=crop';
 
 export const metadata: Metadata = {
@@ -37,6 +37,8 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+import { AuthGuard } from '@/components/AuthGuard';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
@@ -63,7 +65,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-body antialiased bg-background safe-paddings">
         <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           <FirebaseClientProvider>
-            {children}
+            <AuthGuard>
+              {children}
+            </AuthGuard>
           </FirebaseClientProvider>
           <Toaster />
         </ThemeProvider>

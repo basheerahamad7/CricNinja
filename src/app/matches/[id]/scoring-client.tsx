@@ -18,15 +18,15 @@ import { useMatchStore, ExtraType, WicketType, BallRecord, Match } from '@/lib/m
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import { useUser, useAuth, setDocumentNonBlocking, useFirebase } from '@/firebase';
+import { useUser, setDocumentNonBlocking, useFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { signInAnonymously } from 'firebase/auth';
+import { AuthButton } from '@/components/AuthButton';
+import { ShieldAlert } from 'lucide-react';
 
 export default function ScoringClient() {
   const { id } = useParams();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
   const { firestore: db } = useFirebase();
   const { matches, updateMatch, undoMatchAction } = useMatchStore();
   const [mounted, setMounted] = useState(false);
@@ -42,12 +42,6 @@ export default function ScoringClient() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (mounted && !isUserLoading && !user) {
-      signInAnonymously(auth).catch(() => {});
-    }
-  }, [user, isUserLoading, auth, mounted]);
-
   const matchId = Array.isArray(id) ? id[0] : id;
   const match = useMemo(() => matches.find(m => m.id === matchId), [matches, matchId]);
 
@@ -60,6 +54,31 @@ export default function ScoringClient() {
   }, [match, user, mounted, db]);
 
   if (!mounted) return null;
+
+  if (!isUserLoading && (!user || user.isAnonymous)) {
+    return (
+      <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center font-body">
+        <Card className="max-w-md w-full rounded-3xl p-6 text-center space-y-6 shadow-lg border-primary/20">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-headline font-black tracking-tight text-foreground">Sign In to Score Match</h2>
+            <p className="text-sm text-muted-foreground">
+              Only signed-in scorers can update the live ball-by-ball score. Please sign in to continue.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col items-center gap-3">
+            <AuthButton />
+            <Button variant="outline" size="sm" onClick={() => router.push(`/matches/scorecard?id=${matchId}`)} className="rounded-full text-xs font-bold w-full">
+              View Public Scorecard Instead
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   if (!match) return <div className="p-8 text-center font-bold text-gray-400">MATCH NOT FOUND</div>;
 
   const currentInnings = match.currentInnings === 1 ? match.innings1 : match.innings2;

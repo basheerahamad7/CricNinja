@@ -54,7 +54,8 @@
     "zustand": "4.5.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^3.4.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
     "@types/node": "20.12.7",
     "@types/react": "18.2.79",
     "@types/react-dom": "18.2.25",

@@ -1,29 +1,46 @@
 'use client';
 import {
-  Auth, // Import Auth type for type hinting
+  Auth,
   signInAnonymously,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  // Assume getAuth and app are initialized elsewhere
+  GoogleAuthProvider,
+  signInWithPopup,
+  linkWithPopup,
+  UserCredential,
 } from 'firebase/auth';
 
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
-  // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
   signInAnonymously(authInstance);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
 /** Initiate email/password sign-up (non-blocking). */
 export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): void {
-  // CRITICAL: Call createUserWithEmailAndPassword directly. Do NOT use 'await createUserWithEmailAndPassword(...)'.
   createUserWithEmailAndPassword(authInstance, email, password);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
 /** Initiate email/password sign-in (non-blocking). */
 export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): void {
-  // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
   signInWithEmailAndPassword(authInstance, email, password);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+}
+
+/** Initiate Google sign-in with popup (links anonymous account if present). */
+export async function initiateGoogleSignIn(authInstance: Auth): Promise<UserCredential | undefined> {
+  const provider = new GoogleAuthProvider();
+  try {
+    if (authInstance.currentUser && authInstance.currentUser.isAnonymous) {
+      try {
+        return await linkWithPopup(authInstance.currentUser, provider);
+      } catch (error: any) {
+        if (error?.code !== 'auth/credential-already-in-use') {
+          console.warn("Account link error, falling back to sign-in:", error);
+        }
+      }
+    }
+    return await signInWithPopup(authInstance, provider);
+  } catch (error) {
+    console.error("Google sign-in error:", error);
+    throw error;
+  }
 }

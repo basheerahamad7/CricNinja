@@ -20,12 +20,15 @@ import { Button } from '@/components/ui/button';
 import { useMatchStore, Match } from '@/lib/match-store';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useFirebase } from '@/firebase';
+import { useFirebase, useUser } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { BannerAd } from '@/components/BannerAd';
 import { Badge } from '@/components/ui/badge';
 import { ModeToggle } from '@/components/mode-toggle';
+import { AuthButton } from '@/components/AuthButton';
+import { SignInModal } from '@/components/SignInModal';
+import { LeaderboardService, UserRankSummary } from '@/services/leaderboard';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +44,7 @@ export default function HomePage() {
   const router = useRouter();
   const { matches, joinedMatchIds, joinMatch } = useMatchStore();
   const { firestore: db } = useFirebase();
+  const { user, userProfile } = useUser();
   
   const [mounted, setMounted] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -48,10 +52,38 @@ export default function HomePage() {
   const [isJoining, setIsJoining] = useState(false);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
+  const [userRanks, setUserRanks] = useState<UserRankSummary>({
+    cityRank: '#12',
+    stateRank: '#58',
+    countryRank: '#421',
+    globalRank: '#5,812',
+  });
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
+  const [showSignInModal, setShowSignInModal] = useState(false);
+  const [signInModalText, setSignInModalText] = useState({
+    title: 'Sign In Required',
+    description: 'You must be signed in with Google to start or spectate matches.'
+  });
+
+  const checkAuth = (action: () => void, title: string, description: string) => {
+    if (!user || user.isAnonymous) {
+      setSignInModalText({ title, description });
+      setShowSignInModal(true);
+    } else {
+      action();
+    }
+  };
+
+  useEffect(() => {
+    if (db && userProfile) {
+      LeaderboardService.fetchUserRankingsSummary(db, userProfile).then(setUserRanks);
+    }
+  }, [db, userProfile]);
 
   useEffect(() => {
     setMounted(true);
@@ -188,11 +220,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-background pb-24 font-body">
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 ring-2 ring-primary/10">
-            <AvatarFallback className="bg-primary text-white text-[10px] font-black uppercase">
-              CN
-            </AvatarFallback>
-          </Avatar>
+          <AuthButton />
           <h1 className="text-lg font-headline font-black tracking-tight text-primary">CricNinja</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -215,18 +243,25 @@ export default function HomePage() {
         <section className="py-2 flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-headline font-bold text-foreground leading-tight">
-              Hi, Scorer! 👋
+              Hi, {user && !user.isAnonymous && user.displayName ? user.displayName.split(' ')[0] : 'Scorer'}! 👋
             </h2>
             <p className="text-muted-foreground text-sm mt-1">
               Live scoring and real-time match tracking.
             </p>
           </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="rounded-full border-primary text-primary font-black uppercase text-[10px] gap-2">
-                <UserPlus className="w-3 h-3" /> Join Match
-              </Button>
-            </DialogTrigger>
+          <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => checkAuth(
+                () => setIsJoinDialogOpen(true),
+                "Sign In to Join / Spectate",
+                "Please sign in with Google to spectate live scoreboards or join a match."
+              )}
+              className="rounded-full border-primary text-primary font-black uppercase text-[10px] gap-2"
+            >
+              <UserPlus className="w-3 h-3" /> Join Match
+            </Button>
             <DialogContent className="rounded-3xl max-w-[90vw]">
               <DialogHeader>
                 <DialogTitle className="text-center font-black uppercase tracking-tight">Join Scoreboard</DialogTitle>
@@ -257,19 +292,24 @@ export default function HomePage() {
         </section>
 
         <div className="grid grid-cols-2 gap-4">
-          <Link href="/matches/create">
-            <Card className="bg-primary text-primary-foreground border-none relative group active:scale-[0.98] transition-all shadow-xl shadow-primary/20 rounded-3xl overflow-hidden h-full">
-              <CardContent className="p-6 relative z-10 flex flex-col justify-between h-full">
-                <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm w-fit mb-4">
-                  <PlusCircle className="h-6 w-6" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg font-black tracking-tight uppercase">New Match</h3>
-                  <p className="text-[10px] opacity-90 font-medium">Start scoring</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+          <Card 
+            onClick={() => checkAuth(
+              () => router.push('/matches/create'),
+              "Sign In to Create Match",
+              "Only verified users can create new matches and manage scorecards. Please sign in to continue."
+            )}
+            className="bg-primary text-primary-foreground border-none relative group active:scale-[0.98] transition-all shadow-xl shadow-primary/20 rounded-3xl overflow-hidden h-full cursor-pointer"
+          >
+            <CardContent className="p-6 relative z-10 flex flex-col justify-between h-full">
+              <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm w-fit mb-4">
+                <PlusCircle className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-black tracking-tight uppercase">New Match</h3>
+                <p className="text-[10px] opacity-90 font-medium">Start scoring</p>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card 
             className="bg-secondary text-secondary-foreground border-none relative group active:scale-[0.98] transition-all shadow-xl shadow-secondary/20 rounded-3xl overflow-hidden h-full cursor-pointer"
@@ -289,13 +329,52 @@ export default function HomePage() {
 
         <BannerAd />
 
-        <section className="bg-secondary/10 p-6 rounded-3xl border border-secondary/20 flex items-center gap-4">
-          <div className="bg-secondary p-3 rounded-2xl"><ShieldCheck className="w-6 h-6 text-white" /></div>
-          <div>
-            <Badge className="bg-secondary text-white border-none text-[10px] mb-1 font-black">PRO STATS</Badge>
-            <h3 className="text-sm font-black text-foreground leading-tight">Advanced Strike Rate & Economy tracking</h3>
-          </div>
-        </section>
+        <Link href="/leaderboard">
+          <Card className="bg-gradient-to-br from-amber-500/10 via-card to-card border-amber-500/30 p-5 rounded-3xl shadow-lg hover:border-amber-500/50 transition-all cursor-pointer space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-amber-500 p-2.5 rounded-2xl text-amber-950 shadow-md shadow-amber-500/20">
+                  <Trophy className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-tight text-foreground">🏆 Your Rankings</h3>
+                  <p className="text-[10px] text-muted-foreground font-semibold">Live ranking across all scopes</p>
+                </div>
+              </div>
+              <Badge className="bg-amber-500 text-amber-950 border-none text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                View All <ArrowRight className="w-3 h-3" />
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 text-center bg-muted/40 p-3 rounded-2xl border border-border/50">
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black text-muted-foreground uppercase truncate">{userProfile?.location?.city || 'City'}</p>
+                <p className="text-xs font-black text-amber-500">{userRanks.cityRank}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black text-muted-foreground uppercase truncate">{userProfile?.location?.state || 'State'}</p>
+                <p className="text-xs font-black text-foreground">{userRanks.stateRank}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black text-muted-foreground uppercase truncate">{userProfile?.location?.country || 'Country'}</p>
+                <p className="text-xs font-black text-foreground">{userRanks.countryRank}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black text-muted-foreground uppercase truncate">Global</p>
+                <p className="text-xs font-black text-foreground">{userRanks.globalRank}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center text-[10px] pt-1 border-t border-border/40 font-bold">
+              <span className="text-emerald-500 flex items-center gap-1 font-black">
+                {userRanks.rankImprovementText || '↑ Improved 8 places this week'}
+              </span>
+              <span className="text-muted-foreground font-mono">
+                {userRanks.xpToNextLevel || 320} XP to Lvl {(userProfile?.progression?.level || 1) + 1}
+              </span>
+            </div>
+          </Card>
+        </Link>
 
         {isLoadingMatches ? (
           <div className="text-center py-10">
@@ -373,10 +452,17 @@ export default function HomePage() {
            <Trophy className="w-6 h-6" />
            <span className="text-[9px] font-black uppercase">MY GAMES</span>
          </div>
-         <Link href="/matches/create" className="flex flex-col items-center gap-1 text-muted-foreground">
+         <div 
+           onClick={() => checkAuth(
+             () => router.push('/matches/create'),
+             "Sign In to Create Match",
+             "Only verified users can create new matches and manage scorecards. Please sign in to continue."
+           )}
+           className="flex flex-col items-center gap-1 text-muted-foreground cursor-pointer"
+         >
            <PlusCircle className="w-6 h-6" />
            <span className="text-[9px] font-black uppercase tracking-widest">START NEW</span>
-         </Link>
+         </div>
       </footer>
 
       <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
@@ -403,6 +489,12 @@ export default function HomePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <SignInModal 
+        isOpen={showSignInModal} 
+        onClose={() => setShowSignInModal(false)} 
+        title={signInModalText.title}
+        description={signInModalText.description}
+      />
     </div>
   );
 }
