@@ -18,7 +18,7 @@ import { useMatchStore, ExtraType, WicketType, BallRecord, Match } from '@/lib/m
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import { useUser, setDocumentNonBlocking, useFirebase } from '@/firebase';
+import { useUser, setDocumentNonBlocking, useFirebase, isUserAuthenticated } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { AuthButton } from '@/components/AuthButton';
 import { ShieldAlert } from 'lucide-react';
@@ -64,7 +64,7 @@ export default function ScoringClient() {
 
   if (!mounted) return null;
 
-  if (!isUserLoading && (!user || user.isAnonymous)) {
+  if (!isUserLoading && !isUserAuthenticated(user)) {
     return (
       <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center font-body">
         <Card className="max-w-md w-full rounded-3xl p-6 text-center space-y-6 shadow-lg border-primary/20">

@@ -230,3 +230,11 @@ export const useUser = (): UserHookResult => {
   const { user, isUserLoading, userError, userProfile, isProfileLoading } = useFirebase();
   return { user, isUserLoading, userError, userProfile, isProfileLoading };
 };
+
+/**
+ * Production authentication check.
+ * Verifies that a valid Firebase user session exists.
+ */
+export function isUserAuthenticated(user: User | null): boolean {
+  return !!user;
+}

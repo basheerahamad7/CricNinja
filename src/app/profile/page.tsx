@@ -16,7 +16,6 @@ import {
   Award,
   Star,
   Activity,
-  Flame,
   PieChart,
   Clock,
   ArrowRight
@@ -26,7 +25,6 @@ import { signOut } from 'firebase/auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ModeToggle } from '@/components/mode-toggle';
 import { toast } from '@/hooks/use-toast';
@@ -42,37 +40,42 @@ export default function ProfilePage() {
     try {
       await signOut(auth);
       toast({ title: 'Signed out successfully' });
-      router.replace('/onboarding');
+      router.replace('/');
     } catch (err) {
       toast({ title: 'Could not sign out', variant: 'destructive' });
     }
   };
 
   const displayName = userProfile?.account?.displayName || user?.displayName || 'Cricket Player';
-  const username = userProfile?.account?.username || 'player';
+  const username = userProfile?.account?.username || (user?.uid ? `user_${user.uid.slice(0, 6)}` : 'player');
   const photoURL = userProfile?.account?.photoURL || user?.photoURL || '';
   const initial = displayName[0]?.toUpperCase() || 'P';
 
-  const city = userProfile?.location?.city || 'Hyderabad';
-  const state = userProfile?.location?.state || 'Telangana';
-  const country = userProfile?.location?.country || 'India';
-  const primaryRole = userProfile?.cricket?.primaryRole?.replace('_', ' ') || 'All Rounder';
-  const jerseyNumber = userProfile?.cricket?.jerseyNumber || 7;
+  const city = userProfile?.location?.city || '';
+  const state = userProfile?.location?.state || '';
+  const country = userProfile?.location?.country || '';
+  const locationText = city && country ? `${city}, ${country}` : country || 'Location Not Set';
+
+  const primaryRole = userProfile?.cricket?.primaryRole ? userProfile.cricket.primaryRole.replace('_', ' ') : 'Unspecified';
+  const jerseyNumber = userProfile?.cricket?.jerseyNumber || null;
   const bio = userProfile?.account?.bio || 'Passionate cricketer on CricNinja.';
-  const favoriteFormats = userProfile?.cricket?.favoriteFormats || ['T20', 'Box Cricket'];
+  const favoriteFormats = userProfile?.cricket?.favoriteFormats || [];
 
   const matches = userProfile?.careerStats?.matches || 0;
   const runs = userProfile?.careerStats?.runs || 0;
   const wickets = userProfile?.careerStats?.wickets || 0;
   const highestScore = userProfile?.careerStats?.highestScore || 0;
   const bestBowling = userProfile?.careerStats?.bestBowling || '0/0';
-  const level = userProfile?.progression?.level || 1;
-  const xp = userProfile?.progression?.xp || 0;
-  const nextLevelXp = level * 500;
-  const xpPercent = Math.min(100, Math.round((xp / nextLevelXp) * 100));
 
-  // Calculated Win Percentage
-  const winPercentage = matches > 0 ? 68 : 0;
+  // Calculated Real Win Percentage (never fabricated)
+  const winPercentage = matches > 0 && userProfile?.careerStats?.wins != null
+    ? `${Math.round((userProfile.careerStats.wins / matches) * 100)}%`
+    : matches > 0 ? 'N/A' : '0%';
+
+  const battingAvg = matches > 0 ? (runs / matches).toFixed(1) : '0.0';
+  const strikeRate = matches > 0 && userProfile?.careerStats?.ballsFaced 
+    ? ((runs / userProfile.careerStats.ballsFaced) * 100).toFixed(1) 
+    : matches > 0 ? 'N/A' : '0.0';
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 font-body select-none">
@@ -129,7 +132,7 @@ export default function ProfilePage() {
                     {primaryRole}
                   </Badge>
                   <Badge variant="outline" className="text-[9px] font-black uppercase border-border text-muted-foreground flex items-center gap-1">
-                    <MapPin className="w-2.5 h-2.5" /> {city}, {country}
+                    <MapPin className="w-2.5 h-2.5" /> {locationText}
                   </Badge>
                 </div>
               </div>
@@ -143,17 +146,6 @@ export default function ProfilePage() {
             >
               <Edit3 className="w-4 h-4 text-muted-foreground" />
             </Button>
-          </div>
-
-          {/* Level & XP Bar */}
-          <div className="space-y-2 bg-muted/30 p-3.5 rounded-2xl border border-border/40">
-            <div className="flex justify-between items-center text-xs font-black uppercase">
-              <span className="text-primary flex items-center gap-1">
-                <Flame className="w-4 h-4" /> Level {level}
-              </span>
-              <span className="text-muted-foreground font-mono">{xp} / {nextLevelXp} XP</span>
-            </div>
-            <Progress value={xpPercent} className="h-2 rounded-full bg-muted" />
           </div>
 
           <p className="text-xs text-muted-foreground font-medium leading-relaxed bg-muted/20 p-3 rounded-2xl">
@@ -176,7 +168,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <p className="text-[8px] font-black text-muted-foreground uppercase">WIN %</p>
-              <p className="text-base font-black text-emerald-500 tabular-nums">{winPercentage}%</p>
+              <p className="text-base font-black text-emerald-500 tabular-nums">{winPercentage}</p>
             </div>
           </div>
         </Card>
@@ -199,22 +191,26 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="bg-muted/30 p-3 rounded-2xl space-y-1">
                   <span className="text-[9px] font-black uppercase text-muted-foreground">Batting Hand</span>
-                  <p className="font-bold uppercase text-foreground">{userProfile?.cricket?.batting?.hand || 'Right'} Hand</p>
+                  <p className="font-bold uppercase text-foreground">{userProfile?.cricket?.batting?.hand ? `${userProfile.cricket.batting.hand} Hand` : 'Unspecified'}</p>
                 </div>
                 <div className="bg-muted/30 p-3 rounded-2xl space-y-1">
                   <span className="text-[9px] font-black uppercase text-muted-foreground">Bowling Style</span>
-                  <p className="font-bold uppercase text-foreground">{userProfile?.cricket?.bowling?.style || 'Right Arm Fast'}</p>
+                  <p className="font-bold uppercase text-foreground">{userProfile?.cricket?.bowling?.style ? userProfile.cricket.bowling.style.replace('_', ' ') : 'Unspecified'}</p>
                 </div>
               </div>
 
               <div className="space-y-2 pt-2">
                 <span className="text-[9px] font-black uppercase text-muted-foreground">Favorite Formats</span>
                 <div className="flex flex-wrap gap-2">
-                  {favoriteFormats.map((fmt) => (
-                    <Badge key={fmt} variant="secondary" className="rounded-full px-3 py-1 font-bold text-xs">
-                      {fmt}
-                    </Badge>
-                  ))}
+                  {favoriteFormats.length > 0 ? (
+                    favoriteFormats.map((fmt) => (
+                      <Badge key={fmt} variant="secondary" className="rounded-full px-3 py-1 font-bold text-xs">
+                        {fmt}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">No format specified</span>
+                  )}
                 </div>
               </div>
             </Card>
@@ -224,15 +220,15 @@ export default function ProfilePage() {
                 <Award className="w-4 h-4 text-amber-500" /> Badges & Achievements
               </h3>
               <div className="flex flex-wrap gap-2">
-                <Badge className="bg-primary/10 text-primary border-primary/30 font-black text-[10px] uppercase py-1.5 px-3">
-                  🥇 Local Legend
-                </Badge>
-                <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-black text-[10px] uppercase py-1.5 px-3">
-                  🔥 Match Starter
-                </Badge>
-                <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 font-black text-[10px] uppercase py-1.5 px-3">
-                  ⭐ Verified Identity
-                </Badge>
+                {userProfile?.badges && userProfile.badges.length > 0 ? (
+                  userProfile.badges.map((b) => (
+                    <Badge key={b} className="bg-primary/10 text-primary border-primary/30 font-black text-[10px] uppercase py-1.5 px-3">
+                      ⭐ {b}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">Play matches to earn official badges!</p>
+                )}
               </div>
             </Card>
           </TabsContent>
@@ -254,11 +250,11 @@ export default function ProfilePage() {
                 </div>
                 <div className="bg-muted/30 p-4 rounded-2xl space-y-1">
                   <span className="text-[9px] font-black uppercase text-muted-foreground">Batting Avg</span>
-                  <p className="text-xl font-black text-primary">{matches > 0 ? (runs / matches).toFixed(1) : '0.0'}</p>
+                  <p className="text-xl font-black text-primary">{battingAvg}</p>
                 </div>
                 <div className="bg-muted/30 p-4 rounded-2xl space-y-1">
                   <span className="text-[9px] font-black uppercase text-muted-foreground">Strike Rate</span>
-                  <p className="text-xl font-black text-foreground">138.5</p>
+                  <p className="text-xl font-black text-foreground">{strikeRate}</p>
                 </div>
               </div>
             </Card>
@@ -280,20 +276,20 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-4 gap-2 text-center bg-muted/40 p-3 rounded-2xl border border-border/40">
                 <div>
-                  <p className="text-[8px] font-black text-muted-foreground uppercase">{city}</p>
-                  <p className="text-xs font-black text-amber-500">#12</p>
+                  <p className="text-[8px] font-black text-muted-foreground uppercase">{city || 'City'}</p>
+                  <p className="text-xs font-black text-amber-500">#--</p>
                 </div>
                 <div>
-                  <p className="text-[8px] font-black text-muted-foreground uppercase">{state}</p>
-                  <p className="text-xs font-black text-foreground">#58</p>
+                  <p className="text-[8px] font-black text-muted-foreground uppercase">{state || 'State'}</p>
+                  <p className="text-xs font-black text-foreground">#--</p>
                 </div>
                 <div>
-                  <p className="text-[8px] font-black text-muted-foreground uppercase">{country}</p>
-                  <p className="text-xs font-black text-foreground">#421</p>
+                  <p className="text-[8px] font-black text-muted-foreground uppercase">{country || 'Country'}</p>
+                  <p className="text-xs font-black text-foreground">#--</p>
                 </div>
                 <div>
                   <p className="text-[8px] font-black text-muted-foreground uppercase">Global</p>
-                  <p className="text-xs font-black text-foreground">#5,812</p>
+                  <p className="text-xs font-black text-foreground">#--</p>
                 </div>
               </div>
             </Card>

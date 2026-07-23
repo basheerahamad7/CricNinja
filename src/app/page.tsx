@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { useMatchStore, Match } from '@/lib/match-store';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useFirebase, useUser } from '@/firebase';
+import { useFirebase, useUser, isUserAuthenticated } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { BannerAd } from '@/components/BannerAd';
@@ -73,7 +73,7 @@ export default function HomePage() {
   });
 
   const checkAuth = (action: () => void, title: string, description: string) => {
-    if (!user || user.isAnonymous) {
+    if (!isUserAuthenticated(user)) {
       setSignInModalText({ title, description });
       setShowSignInModal(true);
     } else {
@@ -229,11 +229,11 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background pb-24 font-body">
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-3">
-          <AuthButton />
+        <div className="flex items-center gap-2">
           <h1 className="text-lg font-headline font-black tracking-tight text-primary">CricNinja</h1>
         </div>
         <div className="flex items-center gap-2">
+          <AuthButton />
           <ModeToggle />
           {!isStandalone && (
             <Button 
@@ -253,7 +253,7 @@ export default function HomePage() {
         <section className="py-2 flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-headline font-bold text-foreground leading-tight">
-              Hi, {user && !user.isAnonymous && user.displayName ? user.displayName.split(' ')[0] : 'Scorer'}! 👋
+              Hi, {user && user.displayName ? user.displayName.split(' ')[0] : 'Scorer'}! 👋
             </h2>
             <p className="text-muted-foreground text-sm mt-1">
               Live scoring and real-time match tracking.
@@ -377,10 +377,10 @@ export default function HomePage() {
 
             <div className="flex justify-between items-center text-[10px] pt-1 border-t border-border/40 font-bold">
               <span className="text-emerald-500 flex items-center gap-1 font-black">
-                {userRanks.rankImprovementText || '↑ Improved 8 places this week'}
+                {userRanks.rankImprovementText || 'Official Ranking Active'}
               </span>
               <span className="text-muted-foreground font-mono">
-                {userRanks.xpToNextLevel || 320} XP to Lvl {(userProfile?.progression?.level || 1) + 1}
+                {userProfile?.careerStats?.matches || 0} Matches Played
               </span>
             </div>
           </Card>

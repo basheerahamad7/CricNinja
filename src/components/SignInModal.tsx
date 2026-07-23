@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { AuthButton } from '@/components/AuthButton';
 import { ShieldAlert } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useUser, isUserAuthenticated } from '@/firebase';
 
 interface SignInModalProps {
   isOpen: boolean;
@@ -29,7 +29,7 @@ export function SignInModal({
 
   // Automatically close modal when user logs in
   useEffect(() => {
-    if (user && !user.isAnonymous && isOpen) {
+    if (isUserAuthenticated(user) && isOpen) {
       onClose();
     }
   }, [user, isOpen, onClose]);

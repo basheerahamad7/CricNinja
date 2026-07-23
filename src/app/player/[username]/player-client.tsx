@@ -16,7 +16,6 @@ import {
   Award,
   Star,
   Activity,
-  Flame,
   Calendar,
   ArrowRight,
   UserCheck
@@ -25,7 +24,6 @@ import { CricNinjaUser } from '@/types/user';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { BottomNavigation } from '@/components/BottomNavigation';
@@ -57,10 +55,6 @@ export function PublicPlayerClient({ player }: PublicPlayerClientProps) {
   const wickets = player.careerStats?.wickets || 0;
   const highestScore = player.careerStats?.highestScore || 0;
   const bestBowling = player.careerStats?.bestBowling || '0/0';
-  const level = player.progression?.level || 1;
-  const xp = player.progression?.xp || 0;
-  const nextLevelXp = level * 500;
-  const xpPercent = Math.min(100, Math.round((xp / nextLevelXp) * 100));
 
   const handleShare = async () => {
     const profileUrl = `${window.location.origin}/player/${username}`;
@@ -155,17 +149,6 @@ export function PublicPlayerClient({ player }: PublicPlayerClientProps) {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Level Progress */}
-          <div className="space-y-2 bg-muted/30 p-3.5 rounded-2xl border border-border/40">
-            <div className="flex justify-between items-center text-xs font-black uppercase">
-              <span className="text-primary flex items-center gap-1">
-                <Flame className="w-4 h-4" /> Level {level} Player
-              </span>
-              <span className="text-muted-foreground font-mono">{xp} / {nextLevelXp} XP</span>
-            </div>
-            <Progress value={xpPercent} className="h-2 rounded-full bg-muted" />
           </div>
 
           <p className="text-xs text-muted-foreground font-medium leading-relaxed bg-muted/20 p-3 rounded-2xl">

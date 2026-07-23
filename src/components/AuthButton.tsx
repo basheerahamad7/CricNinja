@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useUser, useAuth } from '@/firebase';
+import React, { useState, useRef } from 'react';
+import { useUser, useAuth, isUserAuthenticated } from '@/firebase';
 import { initiateGoogleSignIn } from '@/firebase/non-blocking-login';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -18,11 +18,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function AuthButton() {
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, userProfile } = useUser();
   const auth = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const signInLockRef = useRef(false);
 
   const handleGoogleSignIn = async () => {
+    // Synchronous guard against rapid double-clicks & concurrent requests
+    if (signInLockRef.current || isSigningIn) {
+      return;
+    }
+
+    signInLockRef.current = true;
     setIsSigningIn(true);
     try {
       await initiateGoogleSignIn(auth);
@@ -49,6 +56,7 @@ export function AuthButton() {
         });
       }
     } finally {
+      signInLockRef.current = false;
       setIsSigningIn(false);
     }
   };
@@ -75,11 +83,14 @@ export function AuthButton() {
     );
   }
 
-  const isGoogleUser = user && !user.isAnonymous;
+  const currentUser = user || auth?.currentUser;
+  const authenticated = isUserAuthenticated(currentUser);
 
-  if (isGoogleUser) {
-    const initials = user.displayName
-      ? user.displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+  if (authenticated && currentUser) {
+    const photoURL = currentUser.photoURL || userProfile?.account?.photoURL || '';
+    const name = currentUser.displayName || userProfile?.account?.displayName || 'User';
+    const initials = name
+      ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
       : 'U';
 
     return (
@@ -87,7 +98,7 @@ export function AuthButton() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
             <Avatar className="h-9 w-9">
-              {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || "User"} />}
+              {photoURL && <AvatarImage src={photoURL} alt={name} />}
               <AvatarFallback className="bg-primary text-primary-foreground font-headline font-bold text-xs">
                 {initials}
               </AvatarFallback>
@@ -97,8 +108,8 @@ export function AuthButton() {
         <DropdownMenuContent className="w-56 rounded-2xl p-2" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-headline font-bold leading-none">{user.displayName || "CricNinja User"}</p>
-              <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
+              <p className="text-sm font-headline font-bold leading-none">{currentUser.displayName || "CricNinja User"}</p>
+              <p className="text-xs leading-none text-muted-foreground truncate">{currentUser.email}</p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />

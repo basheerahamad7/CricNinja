@@ -1,13 +1,14 @@
 import { Firestore, doc, getDoc, runTransaction } from 'firebase/firestore';
 
-export async function checkUsernameAvailable(db: Firestore, username: string): Promise<boolean> {
+export async function checkUsernameAvailable(db: Firestore, username: string, currentUid?: string): Promise<boolean> {
   const cleanUsername = username.toLowerCase().trim();
   if (!cleanUsername || cleanUsername.length < 3) return false;
 
   try {
     const docRef = doc(db, 'usernames', cleanUsername);
     const snap = await getDoc(docRef);
-    return !snap.exists();
+    if (!snap.exists()) return true;
+    return currentUid ? snap.data()?.uid === currentUid : false;
   } catch (error) {
     console.error('Error checking username availability:', error);
     return false;
@@ -24,10 +25,13 @@ export async function reserveUsername(db: Firestore, username: string, uid: stri
       const usernameSnap = await transaction.get(usernameRef);
 
       if (usernameSnap.exists()) {
-        throw new Error('Username already taken');
+        const ownerUid = usernameSnap.data()?.uid;
+        if (ownerUid && ownerUid !== uid) {
+          throw new Error('Username already taken');
+        }
       }
 
-      transaction.set(usernameRef, { uid, createdAt: new Date() });
+      transaction.set(usernameRef, { uid, createdAt: new Date() }, { merge: true });
     });
     return true;
   } catch (error) {

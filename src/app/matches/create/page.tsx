@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMatchStore, Player, Match } from '@/lib/match-store';
-import { useUser } from '@/firebase';
+import { useUser, isUserAuthenticated } from '@/firebase';
 import { AuthButton } from '@/components/AuthButton';
 
 export default function CreateMatchPage() {
@@ -22,7 +22,7 @@ export default function CreateMatchPage() {
     setMounted(true);
   }, []);
 
-  if (mounted && !isUserLoading && (!user || user.isAnonymous)) {
+  if (mounted && !isUserLoading && !isUserAuthenticated(user)) {
     return (
       <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center font-body">
         <Card className="max-w-md w-full rounded-3xl p-6 text-center space-y-6 shadow-lg border-primary/20">

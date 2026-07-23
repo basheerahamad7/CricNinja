@@ -91,7 +91,7 @@ export function Leaderboard() {
   const getMetricValue = (u: CricNinjaUser) => {
     if (metric === 'runs') return `${u.careerStats?.runs || 0} runs`;
     if (metric === 'wickets') return `${u.careerStats?.wickets || 0} wkts`;
-    if (metric === 'xp') return `${u.progression?.xp || 0} XP`;
+    if (metric === 'matches') return `${u.careerStats?.matches || 0} matches`;
     return '0';
   };
 
@@ -196,7 +196,7 @@ export function Leaderboard() {
         {[
           { id: 'runs', label: 'Most Runs', icon: Trophy },
           { id: 'wickets', label: 'Most Wickets', icon: Target },
-          { id: 'xp', label: 'Top XP', icon: Zap },
+          { id: 'matches', label: 'Most Matches', icon: Zap },
         ].map((m) => {
           const Icon = m.icon;
           const isSelected = metric === m.id;
@@ -276,7 +276,6 @@ export function Leaderboard() {
 
                       <div className="text-right shrink-0 pl-2">
                         <p className="font-black text-xs text-primary tabular-nums">{getMetricValue(player)}</p>
-                        <p className="text-[8px] font-bold text-muted-foreground uppercase">Lvl {player.progression?.level || 1}</p>
                       </div>
                     </div>
                   );
@@ -323,7 +322,6 @@ export function Leaderboard() {
 
                       <div className="text-right shrink-0 pl-2">
                         <p className="font-black text-xs text-primary tabular-nums">{getMetricValue(userProfile)}</p>
-                        <p className="text-[8px] font-bold text-muted-foreground uppercase">Lvl {userProfile.progression?.level || 1}</p>
                       </div>
                     </div>
                   </div>

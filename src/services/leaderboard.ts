@@ -1,8 +1,8 @@
-import { Firestore, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { Firestore, collection, query, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore';
 import { CricNinjaUser } from '@/types/user';
 
 export type ScopeType = 'city' | 'state' | 'country' | 'global';
-export type MetricType = 'runs' | 'wickets' | 'xp';
+export type MetricType = 'runs' | 'wickets' | 'matches';
 export type PeriodType = 'all_time';
 
 export interface LeaderboardEntry extends CricNinjaUser {
@@ -15,7 +15,7 @@ export interface UserRankSummary {
   countryRank: string;
   globalRank: string;
   rankImprovementText?: string;
-  xpToNextLevel?: number;
+  matchesPlayed?: number;
 }
 
 export interface FetchLeaderboardResult {
@@ -27,15 +27,15 @@ export interface FetchLeaderboardResult {
 const IS_DEV = process.env.NODE_ENV === 'development';
 
 /**
- * Dedicated Leaderboard Service
- * Production-grade server-side ordered queries, caching, and rank movement tracking.
+ * Production Leaderboard Service
+ * Performs real Firestore queries and accurate user rank calculations based on cricket statistics.
  */
 export class LeaderboardService {
   private static cache: Record<string, { timestamp: number; data: FetchLeaderboardResult }> = {};
-  private static CACHE_TTL_MS = 60 * 1000; // 1-minute TTL
+  private static CACHE_TTL_MS = 60 * 1000; // 1 minute in-memory cache
 
   /**
-   * Fetches Top 10 players using direct server-side Firestore ordering and limits.
+   * Fetches Top 10 players for a scope using server-side ordering and accurate user rank resolution.
    */
   static async fetchTop10Leaderboard(
     db: Firestore,
@@ -55,8 +55,15 @@ export class LeaderboardService {
     let rawTop10: CricNinjaUser[] = [];
 
     let metricField = 'careerStats.runs';
-    if (metric === 'wickets') metricField = 'careerStats.wickets';
-    if (metric === 'xp') metricField = 'progression.xp';
+    let userMetricVal = userProfile?.careerStats?.runs || 0;
+
+    if (metric === 'wickets') {
+      metricField = 'careerStats.wickets';
+      userMetricVal = userProfile?.careerStats?.wickets || 0;
+    } else if (metric === 'matches') {
+      metricField = 'careerStats.matches';
+      userMetricVal = userProfile?.careerStats?.matches || 0;
+    }
 
     try {
       let q;
@@ -102,11 +109,11 @@ export class LeaderboardService {
         const snap = await getDocs(fallbackQuery);
         snap.forEach((docSnap) => rawTop10.push(docSnap.data() as CricNinjaUser));
       } catch (e) {
-        console.error("Leaderboard fallback failed:", e);
+        console.error("Leaderboard query error:", e);
       }
     }
 
-    // Isolate demo fallback entries behind development environment flag
+    // Gated development mock players if database has fewer than 10 users during local testing
     if (IS_DEV && rawTop10.length < 10) {
       const demoPlayers: CricNinjaUser[] = [
         {
@@ -117,11 +124,10 @@ export class LeaderboardService {
           profileCompletion: 100,
           createdAt: null,
           updatedAt: null,
-          account: { displayName: 'Rahul Sharma', username: 'rahul_smash', photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150', bio: 'Aggressive opening batter from Hyderabad' },
+          account: { displayName: 'Rahul Sharma', username: 'rahul_smash', photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150', bio: 'Aggressive opening batter' },
           location: { countryId: 'IN', country: 'India', stateId: 'IN-TG', state: 'Telangana', cityId: 'IN-TG-HYD', city: 'Hyderabad' },
           cricket: { primaryRole: 'batter', batting: { hand: 'right', position: 'opener' }, bowling: { arm: 'right', style: 'off_spin' }, jerseyNumber: 18, favoriteFormats: ['T20'] },
           social: { followers: 120, following: 40, verified: true },
-          progression: { level: 14, xp: 4200 },
           careerStats: { matches: 42, runs: 1280, wickets: 14, highestScore: 112, bestBowling: '3/18' },
           achievements: [], badges: []
         },
@@ -137,7 +143,6 @@ export class LeaderboardService {
           location: { countryId: 'IN', country: 'India', stateId: 'IN-TG', state: 'Telangana', cityId: 'IN-TG-HYD', city: 'Hyderabad' },
           cricket: { primaryRole: 'bowler', batting: { hand: 'right', position: 'finisher' }, bowling: { arm: 'right', style: 'fast' }, jerseyNumber: 99, favoriteFormats: ['T20'] },
           social: { followers: 95, following: 20, verified: false },
-          progression: { level: 12, xp: 3800 },
           careerStats: { matches: 38, runs: 420, wickets: 58, highestScore: 45, bestBowling: '5/12' },
           achievements: [], badges: []
         }
@@ -151,12 +156,9 @@ export class LeaderboardService {
       });
     }
 
-    const top10: LeaderboardEntry[] = rawTop10.map((user) => {
-      const charCodeSum = (user.uid || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const moveOptions = [3, 1, 0, -2, 4, 0, 2];
-      const rankChange = moveOptions[charCodeSum % moveOptions.length];
-      return { ...user, rankChange };
-    });
+    const top10: LeaderboardEntry[] = rawTop10.map((user) => ({
+      ...user,
+    }));
 
     let userInTop10 = false;
     let userRank: number | null = null;
@@ -166,9 +168,26 @@ export class LeaderboardService {
       if (foundIdx !== -1) {
         userInTop10 = true;
         userRank = foundIdx + 1;
+      } else if (userMetricVal > 0) {
+        // Calculate true rank by counting users with a higher metric score
+        try {
+          let rankQuery;
+          if (scope === 'city' && userProfile.location?.cityId) {
+            rankQuery = query(usersRef, where('location.cityId', '==', userProfile.location.cityId), where(metricField, '>', userMetricVal));
+          } else if (scope === 'state' && userProfile.location?.stateId) {
+            rankQuery = query(usersRef, where('location.stateId', '==', userProfile.location.stateId), where(metricField, '>', userMetricVal));
+          } else if (scope === 'country' && userProfile.location?.countryId) {
+            rankQuery = query(usersRef, where('location.countryId', '==', userProfile.location.countryId), where(metricField, '>', userMetricVal));
+          } else {
+            rankQuery = query(usersRef, where(metricField, '>', userMetricVal));
+          }
+          const countSnap = await getCountFromServer(rankQuery);
+          userRank = countSnap.data().count + 1;
+        } catch (e) {
+          userRank = null;
+        }
       } else {
-        userInTop10 = false;
-        userRank = 11 + (Math.abs((userProfile.uid || '').charCodeAt(0) || 1) % 40);
+        userRank = null; // Unranked if 0 score
       }
     }
 
@@ -178,35 +197,65 @@ export class LeaderboardService {
   }
 
   /**
-   * Personalized user rankings summary for City, State, Country, and Global.
+   * Fetches accurate user rankings summary across City, State, Country, and Global scopes.
    */
   static async fetchUserRankingsSummary(
     db: Firestore,
     userProfile: CricNinjaUser | null
   ): Promise<UserRankSummary> {
-    if (!userProfile) {
+    if (!userProfile || !userProfile.uid) {
       return {
         cityRank: '#--',
         stateRank: '#--',
         countryRank: '#--',
         globalRank: '#--',
         rankImprovementText: 'Sign in to see rankings',
-        xpToNextLevel: 500,
+        matchesPlayed: 0,
       };
     }
 
-    const currentXp = userProfile.progression?.xp || 0;
-    const currentLevel = userProfile.progression?.level || 1;
-    const nextLevelXp = currentLevel * 500;
-    const xpToNextLevel = Math.max(0, nextLevelXp - currentXp);
+    const currentRuns = userProfile.careerStats?.runs || 0;
+    const matchesPlayed = userProfile.careerStats?.matches || 0;
+
+    const usersRef = collection(db, 'users');
+
+    const getRankText = async (q: any): Promise<string> => {
+      if (currentRuns === 0) return '#--';
+      try {
+        const countSnap = await getCountFromServer(q);
+        const rank = countSnap.data().count + 1;
+        return `#${rank}`;
+      } catch (e) {
+        return '#--';
+      }
+    };
+
+    let cityRank = '#--';
+    let stateRank = '#--';
+    let countryRank = '#--';
+    let globalRank = '#--';
+
+    if (userProfile.location?.cityId) {
+      cityRank = await getRankText(query(usersRef, where('location.cityId', '==', userProfile.location.cityId), where('careerStats.runs', '>', currentRuns)));
+    }
+
+    if (userProfile.location?.stateId) {
+      stateRank = await getRankText(query(usersRef, where('location.stateId', '==', userProfile.location.stateId), where('careerStats.runs', '>', currentRuns)));
+    }
+
+    if (userProfile.location?.countryId) {
+      countryRank = await getRankText(query(usersRef, where('location.countryId', '==', userProfile.location.countryId), where('careerStats.runs', '>', currentRuns)));
+    }
+
+    globalRank = await getRankText(query(usersRef, where('careerStats.runs', '>', currentRuns)));
 
     return {
-      cityRank: '#12',
-      stateRank: '#58',
-      countryRank: '#421',
-      globalRank: '#5,812',
-      rankImprovementText: '↑ Improved 8 places this week',
-      xpToNextLevel: xpToNextLevel || 320,
+      cityRank,
+      stateRank,
+      countryRank,
+      globalRank,
+      rankImprovementText: currentRuns > 0 ? 'Official Ranking Active' : 'Play matches to unlock rank',
+      matchesPlayed,
     };
   }
 }

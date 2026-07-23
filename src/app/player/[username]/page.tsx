@@ -43,7 +43,6 @@ const DEMO_PROFILES: Record<string, CricNinjaUser> = {
       favoriteFormats: ['T20', 'Tennis Ball', 'Box Cricket'],
     },
     social: { followers: 145, following: 32, verified: true },
-    progression: { level: 14, xp: 4200 },
     careerStats: {
       matches: 42,
       runs: 1280,
@@ -84,7 +83,6 @@ const DEMO_PROFILES: Record<string, CricNinjaUser> = {
       favoriteFormats: ['T20', 'ODI'],
     },
     social: { followers: 520, following: 12, verified: true },
-    progression: { level: 25, xp: 12500 },
     careerStats: {
       matches: 88,
       runs: 2450,

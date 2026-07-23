@@ -13,7 +13,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { useAuth, useFirebase, useUser, initiateGoogleSignIn } from '@/firebase';
-import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,10 +58,10 @@ export default function OnboardingPage() {
   const [bowlingStyle, setBowlingStyle] = useState<BowlingStyle | string | null>(null);
   const [specialization, setSpecialization] = useState<Specialization | string | null>(null);
 
-  // Location State (Standardized IDs)
-  const [countryId, setCountryId] = useState<string>('IN');
-  const [stateId, setStateId] = useState<string>('IN-TG');
-  const [cityId, setCityId] = useState<string>('IN-TG-HYD');
+  // Location State (Standardized IDs - Require explicit user selection)
+  const [countryId, setCountryId] = useState<string>('');
+  const [stateId, setStateId] = useState<string>('');
+  const [cityId, setCityId] = useState<string>('');
 
   // Username State
   const [username, setUsername] = useState<string>('');
@@ -77,11 +77,6 @@ export default function OnboardingPage() {
   // Sync existing onboarding state from Firestore if available
   useEffect(() => {
     if (userProfile) {
-      if (userProfile.profileCompleted) {
-        router.replace('/');
-        return;
-      }
-
       if (userProfile.onboardingStep) {
         setStep(userProfile.onboardingStep);
       }
@@ -146,7 +141,7 @@ export default function OnboardingPage() {
 
     setIsCheckingUsername(true);
     const timer = setTimeout(async () => {
-      const available = await checkUsernameAvailable(db, clean);
+      const available = await checkUsernameAvailable(db, clean, user?.uid);
       setIsUsernameAvailable(available);
       setIsCheckingUsername(false);
     }, 400);
@@ -161,43 +156,46 @@ export default function OnboardingPage() {
       const res = await initiateGoogleSignIn(auth);
       if (res?.user && db) {
         const userRef = doc(db, 'users', res.user.uid);
-        const initialUserData: Partial<CricNinjaUser> = {
-          uid: res.user.uid,
-          email: res.user.email || '',
-          profileCompleted: false,
-          onboardingStep: 3,
-          profileCompletion: 20,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          account: {
-            displayName: res.user.displayName || 'Cricket Player',
-            username: '',
-            photoURL: res.user.photoURL || '',
-            bio: '',
-          },
-          location: {
-            countryId: 'IN',
-            country: 'India',
-            stateId: 'IN-TG',
-            state: 'Telangana',
-            cityId: 'IN-TG-HYD',
-            city: 'Hyderabad',
-          },
-          cricket: {
-            primaryRole: null,
-            batting: { hand: null, position: null },
-            bowling: { arm: null, style: null },
-            jerseyNumber: null,
-            favoriteFormats: [],
-          },
-          social: { followers: 0, following: 0, verified: false },
-          progression: { level: 1, xp: 0 },
-          careerStats: { matches: 0, runs: 0, wickets: 0, highestScore: 0, bestBowling: '0/0' },
-          achievements: [],
-          badges: [],
-        };
+        const docSnap = await getDoc(userRef);
 
-        await setDoc(userRef, initialUserData, { merge: true });
+        if (!docSnap.exists()) {
+          const initialUserData: Partial<CricNinjaUser> = {
+            uid: res.user.uid,
+            email: res.user.email || '',
+            profileCompleted: false,
+            onboardingStep: 3,
+            profileCompletion: 20,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            account: {
+              displayName: res.user.displayName || 'Cricket Player',
+              username: '',
+              photoURL: res.user.photoURL || '',
+              bio: '',
+            },
+            location: {
+              countryId: 'IN',
+              country: 'India',
+              stateId: 'IN-TG',
+              state: 'Telangana',
+              cityId: 'IN-TG-HYD',
+              city: 'Hyderabad',
+            },
+            cricket: {
+              primaryRole: null,
+              batting: { hand: null, position: null },
+              bowling: { arm: null, style: null },
+              jerseyNumber: null,
+              favoriteFormats: [],
+            },
+            social: { followers: 0, following: 0, verified: false },
+            careerStats: { matches: 0, runs: 0, wickets: 0, highestScore: 0, bestBowling: '0/0' },
+            achievements: [],
+            badges: [],
+          };
+
+          await setDoc(userRef, initialUserData, { merge: true });
+        }
         setStep(3);
       }
     } catch (err: any) {
@@ -258,6 +256,15 @@ export default function OnboardingPage() {
   };
 
   const handleLocationNext = () => {
+    if (!countryId || !stateId || !cityId) {
+      toast({
+        title: 'Location Selection Required',
+        description: 'Please select your Country, State, and City to proceed.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const selectedCountry = COUNTRIES.find(c => c.id === countryId);
     const selectedState = STATES.find(s => s.id === stateId);
     const selectedCity = CITIES.find(c => c.id === cityId);
@@ -265,11 +272,11 @@ export default function OnboardingPage() {
     updateFirestoreStep(7, 65, {
       location: {
         countryId,
-        country: selectedCountry?.name || 'India',
+        country: selectedCountry?.name || '',
         stateId,
-        state: selectedState?.name || 'Telangana',
+        state: selectedState?.name || '',
         cityId,
-        city: selectedCity?.name || 'Hyderabad',
+        city: selectedCity?.name || '',
       }
     });
   };
@@ -669,11 +676,8 @@ export default function OnboardingPage() {
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Country</label>
               <Select value={countryId} onValueChange={(val) => {
                 setCountryId(val);
-                const availableStates = getStates(val);
-                const nextStateId = availableStates[0]?.id || '';
-                setStateId(nextStateId);
-                const availableCities = getCities(nextStateId);
-                setCityId(availableCities[0]?.id || '');
+                setStateId('');
+                setCityId('');
               }}>
                 <SelectTrigger className="h-12 rounded-2xl border-border bg-card font-bold text-sm">
                   <SelectValue placeholder="Select Country" />
@@ -691,13 +695,12 @@ export default function OnboardingPage() {
             {/* State Selector */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">State / Province</label>
-              <Select value={stateId} onValueChange={(val) => {
+              <Select value={stateId} disabled={!countryId} onValueChange={(val) => {
                 setStateId(val);
-                const availableCities = getCities(val);
-                setCityId(availableCities[0]?.id || '');
+                setCityId('');
               }}>
                 <SelectTrigger className="h-12 rounded-2xl border-border bg-card font-bold text-sm">
-                  <SelectValue placeholder="Select State" />
+                  <SelectValue placeholder={countryId ? "Select State" : "Select Country First"} />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
                   {getStates(countryId).map((s) => (
@@ -712,9 +715,9 @@ export default function OnboardingPage() {
             {/* City Selector */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">City</label>
-              <Select value={cityId} onValueChange={(val) => setCityId(val)}>
+              <Select value={cityId} disabled={!stateId} onValueChange={(val) => setCityId(val)}>
                 <SelectTrigger className="h-12 rounded-2xl border-border bg-card font-bold text-sm">
-                  <SelectValue placeholder="Select City" />
+                  <SelectValue placeholder={stateId ? "Select City" : "Select State First"} />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
                   {getCities(stateId).map((c) => (
@@ -938,14 +941,10 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 bg-muted/40 p-4 rounded-2xl text-center">
-              <div>
-                <p className="text-[9px] font-black text-muted-foreground uppercase">LEVEL</p>
-                <p className="text-base font-black text-primary">1</p>
-              </div>
+            <div className="grid grid-cols-2 gap-2 bg-muted/40 p-4 rounded-2xl text-center">
               <div>
                 <p className="text-[9px] font-black text-muted-foreground uppercase">MATCHES</p>
-                <p className="text-base font-black text-foreground">0</p>
+                <p className="text-base font-black text-primary">0</p>
               </div>
               <div>
                 <p className="text-[9px] font-black text-muted-foreground uppercase">RUNS / WKT</p>

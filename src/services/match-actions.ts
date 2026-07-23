@@ -14,7 +14,6 @@ import { Match } from '@/lib/match-store';
 export async function getCachedMatch(matchId: string): Promise<Match | null> {
   const fetcher = unstable_cache(
     async (id: string) => {
-      console.log(`[Edge Cache Miss] Fetching match ${id} from Firestore`);
       const { firestore } = initializeFirebase();
       const matchRef = doc(firestore, 'matches', id);
       const snapshot = await getDoc(matchRef);

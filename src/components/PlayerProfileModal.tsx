@@ -93,8 +93,8 @@ export function PlayerProfileModal({ player, isOpen, onClose }: PlayerProfileMod
           </div>
           <div className="bg-card border border-border p-3 rounded-2xl shadow-sm space-y-0.5">
             <Zap className="w-4 h-4 text-sky-500 mx-auto" />
-            <p className="text-[9px] font-black text-muted-foreground uppercase">XP / LEVEL</p>
-            <p className="text-base font-black text-foreground">Lvl {player.progression?.level || 1}</p>
+            <p className="text-[9px] font-black text-muted-foreground uppercase">MATCHES</p>
+            <p className="text-base font-black text-foreground">{player.careerStats?.matches || 0}</p>
           </div>
         </div>
 

@@ -64,17 +64,14 @@ export interface CricNinjaUser {
     verified: boolean;
   };
 
-  progression: {
-    level: number;
-    xp: number;
-  };
-
   careerStats: {
     matches: number;
     runs: number;
     wickets: number;
     highestScore: number;
     bestBowling: string;
+    wins?: number;
+    ballsFaced?: number;
   } | null;
 
   achievements: string[];

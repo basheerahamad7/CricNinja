@@ -11,36 +11,37 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading, userProfile, isProfileLoading } = useUser();
 
   const isOnboardingPage = pathname === '/onboarding';
+  const isProtectedRoute = 
+    pathname === '/profile' || 
+    pathname === '/matches/create' || 
+    pathname.includes('/scoring');
 
   useEffect(() => {
     if (isUserLoading || isProfileLoading) return;
 
-    // Unauthenticated -> Must go to onboarding
-    if (!user) {
-      if (!isOnboardingPage) {
-        router.replace('/onboarding');
-      }
+    // Unauthenticated user attempting to access protected route
+    if (!user && isProtectedRoute) {
+      router.replace('/onboarding');
       return;
     }
 
-    // Authenticated user with no profile or incomplete profile -> Must go to onboarding
-    if (!userProfile || !userProfile.profileCompleted) {
-      if (!isOnboardingPage) {
-        router.replace('/onboarding');
-      }
+    // Authenticated user with incomplete profile attempting to access protected route
+    if (user && (!userProfile || !userProfile.profileCompleted) && isProtectedRoute) {
+      router.replace('/onboarding');
       return;
     }
 
-    // Authenticated user WITH completed profile -> If on onboarding, redirect home
-    if (userProfile && userProfile.profileCompleted && isOnboardingPage) {
+    // Authenticated user WITH completed profile visiting onboarding
+    if (user && userProfile?.profileCompleted && isOnboardingPage) {
       router.replace('/');
+      return;
     }
-  }, [user, isUserLoading, userProfile, isProfileLoading, pathname, router, isOnboardingPage]);
+  }, [user, isUserLoading, userProfile, isProfileLoading, pathname, router, isOnboardingPage, isProtectedRoute]);
 
-  // Loading state
-  if (isUserLoading || isProfileLoading) {
+  // Prevent UI flash during initial auth resolution or protected route profile loading
+  if (isUserLoading || (isProtectedRoute && user && isProfileLoading)) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4 select-none">
         <div className="relative">
           <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center animate-pulse">
             <Shield className="w-8 h-8 text-primary" />
@@ -49,18 +50,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         </div>
         <div className="text-center space-y-1">
           <p className="font-headline font-black text-sm uppercase tracking-widest text-primary">CRICNINJA</p>
-          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Verifying Identity...</p>
+          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Authenticating Session...</p>
         </div>
       </div>
     );
   }
 
   // Prevent flash of protected content while redirecting
-  if (!user && !isOnboardingPage) {
+  if (!user && isProtectedRoute) {
     return null;
   }
 
-  if (user && (!userProfile || !userProfile.profileCompleted) && !isOnboardingPage) {
+  if (user && (!userProfile || !userProfile.profileCompleted) && isProtectedRoute) {
     return null;
   }
 

@@ -25,6 +25,9 @@ import { toast } from '@/hooks/use-toast';
 import { useUser, useFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
+import { useOfflineSync, OfflineSyncService } from '@/lib/offline-sync';
+import { OfflineBanner } from '@/components/OfflineBanner';
+import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 
 function ScoringContent() {
   const router = useRouter();
@@ -36,6 +39,8 @@ function ScoringContent() {
   const { matches, updateMatch, undoMatchAction } = useMatchStore();
   const [mounted, setMounted] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+
+  const { isOnline, syncStatus, pendingCount, triggerSync } = useOfflineSync(db);
   
   const [isWicketTypeDialogOpen, setIsWicketTypeDialogOpen] = useState(false);
   const [isWicketDialogOpen, setIsWicketDialogOpen] = useState(false);
@@ -89,7 +94,8 @@ function ScoringContent() {
   }, [match, matches]);
 
   const syncToFirestore = (updatedMatch: Match) => {
-    if (db && isOwner) {
+    OfflineSyncService.saveLocalMatch(updatedMatch, isOnline ? 'synced' : 'pending');
+    if (db && isOwner && isOnline) {
       const matchRef = doc(db, 'matches', updatedMatch.id);
       const { history, ...sanitizedMatch } = JSON.parse(JSON.stringify(updatedMatch));
       setDocumentNonBlocking(matchRef, sanitizedMatch, { merge: true });
@@ -372,14 +378,18 @@ function ScoringContent() {
 
   return (
     <div className="min-h-screen bg-background pb-24 font-body">
+      <OfflineBanner isOnline={isOnline} />
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push('/')}><ArrowLeft className="w-5 h-5" /></Button>
           <h2 className="font-black text-xs uppercase truncate max-w-[120px]">{battingTeam.name}</h2>
         </div>
-        <Badge variant="outline" className={`text-[10px] font-black uppercase ${match.status === 'ongoing' ? 'text-destructive border-destructive/20' : ''}`}>
-          {match.status === 'ongoing' ? '🔴 LIVE' : 'FINISHED'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <SyncStatusIndicator status={syncStatus} pendingCount={pendingCount} onSyncClick={triggerSync} />
+          <Badge variant="outline" className={`text-[10px] font-black uppercase ${match.status === 'ongoing' ? 'text-destructive border-destructive/20' : ''}`}>
+            {match.status === 'ongoing' ? '🔴 LIVE' : 'FINISHED'}
+          </Badge>
+        </div>
       </header>
 
       <main className="max-w-xl mx-auto p-4 space-y-4">
